@@ -14,6 +14,9 @@ ona göre değiştir. İstatistik sembolleri italik yazılır.
 | Karışık desen ANOVA | Zaman × grup etkileşimi anlamlıdır, F(1,17, 18,75) = 5,12, p = ,031, ηp² = ,24 (Greenhouse-Geisser düzeltmeli). | ηp²: ,01 küçük, ,06 orta, ,14 büyük |
 | Pearson / Spearman | Değişkenler arasında pozitif, orta düzeyde anlamlı bir ilişki vardır, r(118) = ,42, p < ,001. | r: ,10 küçük, ,30 orta, ,50 büyük |
 | Çoklu regresyon | Model anlamlıdır, F(2, 117) = 24,60, p < ,001, R² = ,30. Öz yeterlik (β = ,41, p < ,001) ve sosyal destek (β = ,22, p = ,008) başarıyı anlamlı biçimde yordamaktadır. Hiyerarşik ise: ikinci blok ΔR² = ,08, ΔF(1, 116) = 13,20, p < ,001. | R²/f²: f² = R²/(1−R²); ,02 küçük, ,15 orta, ,35 büyük (formülü belirt) |
+| İki yönlü ANOVA | Cinsiyet × eğitim etkileşimi anlamlıdır, F(2, 114) = 4,21, p = ,017, ηp² = ,07. Basit etki analizine göre... | ηp²: ,01 küçük, ,06 orta, ,14 büyük |
+| Lojistik regresyon | Model anlamlıdır, χ²(3) = 21,4, p < ,001, Nagelkerke R² = ,24; Hosmer-Lemeshow χ²(8) = 6,1, p = ,64. Sınıflandırma doğruluğu %72. Öz yeterlik başarı olasılığının odds'unu artırmaktadır, B = 0,58, Wald = 9,8, p = ,002, OR = 1,79, %95 GA [1,24, 2,58]. | Odds oranı (Exp(B)) ve %95 GA |
+| Açıklayıcı faktör analizi | KMO = ,86, Bartlett χ²(190) = 1520,3, p < ,001. Temel eksen + promax ile öz değeri 1'in üzerinde üç faktör elde edilmiş, toplam varyansın %58,4'ünü açıklamaktadır. Yükler ,42–,81 arasındadır. | Açıklanan varyans, faktör yükleri |
 | Ki-kare | Cinsiyet ile tercih arasında anlamlı bir ilişki vardır, χ²(2, N = 150) = 8,21, p = ,016, V = ,23. | Cramér's V (df'ye göre yorumla) |
 | Mann-Whitney | ... anlamlı düzeyde yüksektir (Mdn = 32 850 ve Mdn = 24 300), U = 9616,5, z = −12,29, p < ,001, r = ,56. | r = \|z\|/√N (SPSS vermez; formülü belirt) |
 | Kruskal-Wallis | H(2) = 9,14, p = ,010 | ε² = H/(N−1) (formülü belirt) |

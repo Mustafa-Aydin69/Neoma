@@ -349,6 +349,61 @@ def run_regression(path: str, dependent: str, blocks: list[list[str]],
 
 
 @mcp.tool()
+def run_anova_factorial(path: str, dependent: str, factors: list[str],
+        filter_variable: str | None = None,
+        filter_value: str | float | None = None) -> dict:
+    """Iki (ya da uc) yonlu bagimsiz gruplar ANOVA (UNIANOVA, tam faktoriyel).
+
+    dependent: surekli bagimli degisken. factors: 2-3 gruplama degiskeni
+    (or. ["cinsiyet", "egitim"]). Cikti: Levene, ana etkiler ve etkilesim
+    (kismi eta kare), Tukey/Games-Howell post hoc (3+ duzeyli faktorlerde),
+    etkilesim icin Bonferroni'li basit etkiler. Once etkilesime bak.
+    """
+    return analysis("anova_factorial", path, filter_variable=filter_variable, filter_value=filter_value,
+                    dependent=dependent, factors=factors)
+
+
+@mcp.tool()
+def run_logistic(path: str, dependent: str, predictors: list[str],
+        categorical: list[str] | None = None, reference: str = "first",
+        method: str = "enter",
+        filter_variable: str | None = None,
+        filter_value: str | float | None = None) -> dict:
+    """Ikili (binary) lojistik regresyon.
+
+    dependent: iki kategorili sonuc (or. gecti/kaldi). predictors: tum yordayicilar.
+    categorical: predictors icindeki kategorik olanlar (metin degiskenler burada
+    olmali); reference: kategoriklerde referans grup "first" ya da "last".
+    method: "enter" (onerilen), "forward" ya da "backward" (LR).
+    Cikti: Omnibus testi, Nagelkerke R^2, Hosmer-Lemeshow, siniflandirma tablosu,
+    B, Wald, p, Exp(B) (odds orani) ve %95 GA. Bagimli degiskenin kodlamasini
+    'Dependent Variable Encoding' tablosundan kontrol et.
+    """
+    return analysis("logistic", path, filter_variable=filter_variable, filter_value=filter_value,
+                    dependent=dependent, predictors=predictors, categorical=categorical,
+                    reference=reference, method=method)
+
+
+@mcp.tool()
+def run_factor(path: str, variables: list[str], extraction: str = "pc",
+        rotation: str = "varimax", n_factors: int | None = None,
+        filter_variable: str | None = None,
+        filter_value: str | float | None = None) -> dict:
+    """Aciklayici faktor analizi (FACTOR).
+
+    variables: olcek maddeleri (en az 3). extraction: "pc" (temel bilesenler),
+    "paf" (temel eksen) ya da "ml". rotation: "varimax", "promax", "oblimin"
+    ya da "none". n_factors verilmezse oz deger > 1 olan faktorler alinir.
+    Cikti: KMO ve Bartlett, ortak varyanslar, aciklanan varyans, dondurulmus
+    yuk matrisi (,30 alti gizli). Scree grafigi doner gelmez; kullaniciya
+    SPSS'te bakmasini soyle.
+    """
+    return analysis("factor", path, filter_variable=filter_variable, filter_value=filter_value,
+                    variables=variables, extraction=extraction, rotation=rotation,
+                    n_factors=n_factors)
+
+
+@mcp.tool()
 def run_crosstabs(path: str, row: str, column: str,
         filter_variable: str | None = None,
         filter_value: str | float | None = None) -> dict:

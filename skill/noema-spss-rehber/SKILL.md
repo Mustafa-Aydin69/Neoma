@@ -117,6 +117,30 @@ silmez (SPSS'teki "Filter out unselected cases" gibi çalışır).
   artıkların normalliği ve uç değerler (Casewise Diagnostics, standart artık > |3|).
   Grafikleri göremediğini söyle; kullanıcıdan SPSS'teki artık grafiğine bakmasını iste.
 
+### İki yönlü ANOVA
+- `run_anova_factorial`: bir sürekli bağımlı değişken, 2–3 bağımsız gruplama değişkeni
+  (ör. cinsiyet × eğitim düzeyi). Önce etkileşime bak: anlamlıysa ana etkileri tek
+  başına yorumlama, basit etkiler (Bonferroni) üzerinden açıkla. Levene bozuksa ve
+  gruplar dengesizse bunu sınırlılık olarak söyle. Etki büyüklüğü kısmi η².
+
+### Lojistik regresyon
+- `run_logistic`: bağımlı değişken iki kategorili olmalı. Kategorik yordayıcıları
+  `categorical` ile ver ve referans grubu açıkça söyle. Raporla: omnibus χ², Nagelkerke
+  R², Hosmer-Lemeshow (p > ,05 uyum iyi), sınıflandırma doğruluğu, her yordayıcı için
+  B, Wald, p, Exp(B) ve %95 GA. Exp(B)'yi "odds" diliyle yorumla ("1 birim artış
+  odds'u 1,8 kat artırır"), olasılık gibi anlatma. Hangi kategorinin 1 kodlandığını
+  Dependent Variable Encoding tablosundan kontrol et. Kural: yordayıcı başına en az
+  10 olay (az görülen kategorideki kişi sayısı).
+
+### Faktör analizi (AFA)
+- `run_factor`: ölçek geliştirme/uyarlama için. Önce KMO (> ,60; ,80+ iyi) ve Bartlett
+  (p < ,05). Faktörlerin ilişkili olması bekleniyorsa `paf` + `promax`/`oblimin`,
+  değilse `pc` + `varimax`. Faktör sayısına öz değer > 1, açıklanan varyans ve scree
+  grafiği birlikte karar verir; scree grafiği Claude'a gelmez, kullanıcıdan SPSS'te
+  bakmasını iste. Yük < ,30–,40 ya da iki faktöre benzer yüklenen (binişik, fark < ,10)
+  maddeleri işaretle, ama madde silme kararını kullanıcıya ve danışmana bırak. Örneklem:
+  madde başına en az 5–10 kişi. AFA sonrası her faktör için `run_reliability` öner.
+
 ### 5. Analizi çalıştır ve açıkla
 Sonucu şu sırayla sun:
 1. **Tek cümlelik cevap:** hipotez desteklendi mi?
@@ -131,7 +155,7 @@ Tüm syntax `~/Noema/logs/syntax.sps` dosyasına yazılır. Kullanıcıya bu dos
 SPSS'te açıp tezin ekine ya da kendi arşivine koyabileceğini hatırlat.
 
 ## Henüz desteklenmeyenler
-Şu analizler için araç yok: iki yönlü bağımsız ANOVA, lojistik regresyon, faktör analizi, güç analizi
+Şu analizler için araç yok: ANCOVA, MANOVA, doğrulayıcı faktör analizi (AMOS gerekir), güç analizi
 (G*Power SPSS dışında yapılır). Bunlar
 istenirse SPSS'te yapılacak adımları ve syntax'ı anlat, ama **sonuç üretme**;
 kullanıcı çıktıyı paylaşırsa birlikte yorumla.

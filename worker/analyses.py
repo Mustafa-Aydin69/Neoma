@@ -13,6 +13,14 @@ MENU = {
     "ttest_paired": "Analyze > Compare Means > Paired-Samples T Test",
     "anova_oneway": "Analyze > Compare Means > One-Way ANOVA (Options: Descriptive, Homogeneity of variance, Welch; Post Hoc: Tukey, Games-Howell)",
     "correlation": "Analyze > Correlate > Bivariate (Pearson veya Spearman)",
+    "anova_factorial": ("Analyze > General Linear Model > Univariate (Dependent Variable; Fixed Factor(s); "
+                        "Options: Descriptive statistics, Estimates of effect size, Homogeneity tests; "
+                        "Post Hoc: Tukey, Games-Howell; EM Means: etkilesim satiri, Compare simple main effects, Bonferroni)"),
+    "logistic": ("Analyze > Regression > Binary Logistic (Dependent; Covariates; Categorical: kategorik "
+                 "yordayicilar, Reference Category; Options: Hosmer-Lemeshow goodness-of-fit, CI for exp(B))"),
+    "factor": ("Analyze > Dimension Reduction > Factor (Descriptives: KMO and Bartlett's test; "
+               "Extraction: yontem ve faktor sayisi, Scree plot; Rotation: yontem; "
+               "Options: Sorted by size, Suppress small coefficients .30)"),
     "regression": ("Analyze > Regression > Linear (Dependent; Independent(s), hiyerarsik ise her blok icin Next; "
                    "Statistics: Estimates, Confidence intervals, Model fit, R squared change, Descriptives, "
                    "Part and partial correlations, Collinearity diagnostics, Durbin-Watson; "
@@ -251,6 +259,107 @@ def b_regression(req, info):
     return "\n".join(lines)
 
 
+def _autorecode_into(var, target):
+    return "AUTORECODE VARIABLES=%s /INTO %s /PRINT.\n" % (var, target)
+
+
+def b_anova_factorial(req, info):
+    dep = check_name(req.get("dependent"))
+    if info(dep)["is_string"]:
+        raise ValueError("Bagimli degisken sayisal olmali: %s" % dep)
+    factors = names(req.get("factors"), minimum=2, label="faktor (gruplama degiskeni)")
+    if len(factors) > 3:
+        raise ValueError("En fazla 3 faktor desteklenir")
+    if len(set(f.lower() for f in factors)) != len(factors) or dep.lower() in [f.lower() for f in factors]:
+        raise ValueError("Ayni degisken iki kez verildi")
+    prelude, used = "", []
+    for i, f in enumerate(factors):
+        if info(f)["is_string"]:
+            t = "noema_f%d" % (i + 1)
+            prelude += _autorecode_into(f, t)
+            used.append(t)
+        else:
+            used.append(f)
+    inter = "*".join(used)
+    # Full factorial design: main effects and every interaction.
+    terms = list(used)
+    if len(used) == 3:
+        a, b, c = used
+        terms += ["%s*%s" % (a, b), "%s*%s" % (a, c), "%s*%s" % (b, c)]
+    terms.append(inter)
+    lines = ["UNIANOVA %s BY %s" % (dep, " ".join(used)),
+             "  /METHOD=SSTYPE(3)",
+             "  /INTERCEPT=INCLUDE",
+             "  /POSTHOC=%s(TUKEY GH)" % " ".join(used),
+             "  /EMMEANS=TABLES(%s)" % inter]
+    for u in used:
+        lines.append("  /EMMEANS=TABLES(%s) COMPARE(%s) ADJ(BONFERRONI)" % (inter, u))
+    lines += ["  /PRINT=DESCRIPTIVE ETASQ HOMOGENEITY",
+              "  /CRITERIA=ALPHA(.05)",
+              "  /DESIGN=%s." % " ".join(terms)]
+    return prelude + "\n".join(lines)
+
+
+def b_logistic(req, info):
+    dep = check_name(req.get("dependent"))
+    preds = names(req.get("predictors"), label="yordayici")
+    cats = names(req.get("categorical") or [], minimum=0)
+    low = [p.lower() for p in preds]
+    if dep.lower() in low:
+        raise ValueError("Bagimli degisken yordayicilar arasinda olamaz")
+    for c in cats:
+        if c.lower() not in low:
+            raise ValueError("Kategorik degisken %s, predictors listesinde de olmali" % c)
+    ref = str(req.get("reference") or "first").lower()
+    if ref not in ("first", "last"):
+        raise ValueError("reference 'first' ya da 'last' olmali")
+    for p in preds:
+        if info(p)["is_string"] and p.lower() not in [c.lower() for c in cats]:
+            raise ValueError("%s metin degisken; categorical listesine ekleyin" % p)
+    prelude = ""
+    if info(dep)["is_string"]:
+        prelude, dep = _autorecode_into(dep, "noema_dep"), "noema_dep"
+    method = {"enter": "ENTER", "forward": "FSTEP(LR)", "backward": "BSTEP(LR)"}.get(
+        str(req.get("method") or "enter").lower())
+    if not method:
+        raise ValueError("method 'enter', 'forward' ya da 'backward' olmali")
+    lines = ["LOGISTIC REGRESSION VARIABLES %s" % dep,
+             "  /METHOD=%s %s" % (method, " ".join(preds))]
+    for c in cats:
+        lines.append("  /CONTRAST (%s)=Indicator%s" % (c, "(1)" if ref == "first" else ""))
+    lines += ["  /PRINT=GOODFIT CI(95)",
+              "  /CRITERIA=PIN(0.05) POUT(0.10) ITERATE(20) CUT(0.5)."]
+    return prelude + "\n".join(lines)
+
+
+def b_factor(req, info):
+    items = names(req.get("variables"), minimum=3, label="madde")
+    for v in items:
+        if info(v)["is_string"]:
+            raise ValueError("Faktor analizinde degiskenler sayisal olmali: %s" % v)
+    ext = {"pc": "PC", "paf": "PAF", "ml": "ML"}.get(str(req.get("extraction") or "pc").lower())
+    if not ext:
+        raise ValueError("extraction 'pc', 'paf' ya da 'ml' olmali")
+    rot = {"varimax": "VARIMAX", "promax": "PROMAX", "oblimin": "OBLIMIN",
+           "none": "NOROTATE"}.get(str(req.get("rotation") or "varimax").lower())
+    if not rot:
+        raise ValueError("rotation 'varimax', 'promax', 'oblimin' ya da 'none' olmali")
+    n = req.get("n_factors")
+    if n is not None:
+        n = int(n)
+        if n < 1 or n >= len(items):
+            raise ValueError("n_factors 1 ile madde sayisi-1 arasinda olmali")
+        crit = "FACTORS(%d) ITERATE(25)" % n
+    else:
+        crit = "MINEIGEN(1) ITERATE(25)"
+    v = " ".join(items)
+    return ("FACTOR\n  /VARIABLES %s\n  /MISSING LISTWISE\n  /ANALYSIS %s\n"
+            "  /PRINT INITIAL KMO EXTRACTION ROTATION\n  /FORMAT SORT BLANK(.30)\n"
+            "  /PLOT EIGEN\n  /CRITERIA %s\n  /EXTRACTION %s\n"
+            "  /CRITERIA ITERATE(25)\n  /ROTATION %s\n  /METHOD=CORRELATION."
+            % (v, v, crit, ext, rot))
+
+
 def b_crosstabs(req, info):
     r = check_name(req.get("row"))
     c = check_name(req.get("column"))
@@ -413,6 +522,9 @@ BUILDERS = {
     "ttest_paired": b_ttest_paired,
     "anova_oneway": b_anova_oneway,
     "correlation": b_correlation,
+    "anova_factorial": b_anova_factorial,
+    "logistic": b_logistic,
+    "factor": b_factor,
     "regression": b_regression,
     "crosstabs": b_crosstabs,
     "mann_whitney": b_mann_whitney,
