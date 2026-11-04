@@ -356,8 +356,11 @@ def run_anova_factorial(path: str, dependent: str, factors: list[str],
 
     dependent: surekli bagimli degisken. factors: 2-3 gruplama degiskeni
     (or. ["cinsiyet", "egitim"]). Cikti: Levene, ana etkiler ve etkilesim
-    (kismi eta kare), Tukey/Games-Howell post hoc (3+ duzeyli faktorlerde),
-    etkilesim icin Bonferroni'li basit etkiler. Once etkilesime bak.
+    (kismi eta kare), Tukey/Games-Howell post hoc istegi (3+ duzeyli faktorlerde;
+    SPSS bazi desenlerde, or. bos hucre varsa, post hoc'u atlar: uyari tablolarini
+    oku ve atlandiysa soyle), etkilesim icin Bonferroni'li basit etkiler.
+    Once etkilesime bak. Bos hucre (bir grup kombinasyonunda hic kisi yok) varsa
+    etkilesim sd'si duser; bunu kullaniciya soyle.
     """
     return analysis("anova_factorial", path, filter_variable=filter_variable, filter_value=filter_value,
                     dependent=dependent, factors=factors)
@@ -377,7 +380,9 @@ def run_logistic(path: str, dependent: str, predictors: list[str],
     method: "enter" (onerilen), "forward" ya da "backward" (LR).
     Cikti: Omnibus testi, Nagelkerke R^2, Hosmer-Lemeshow, siniflandirma tablosu,
     B, Wald, p, Exp(B) (odds orani) ve %95 GA. Bagimli degiskenin kodlamasini
-    'Dependent Variable Encoding' tablosundan kontrol et.
+    'Dependent Variable Encoding' tablosundan kontrol et. Buyuk olcekli
+    yordayicilarda (or. maas) Exp(B) 1,000 gorunebilir; bunu soyle ve
+    kullaniciya olcegi bolerek (or. bin TL) yeni degisken olusturmasini oner.
     """
     return analysis("logistic", path, filter_variable=filter_variable, filter_value=filter_value,
                     dependent=dependent, predictors=predictors, categorical=categorical,

@@ -139,7 +139,12 @@ def _walk(el, path, cells):
                           "text": child.get("text")})
         elif tag == "category":
             _walk(child, path + [_label(child)], cells)
-        elif tag in ("dimension", "group"):
+        elif tag == "group":
+            # Nested column headers (e.g. "minority = Yes" over Observed and
+            # Expected) live on groups; keep them so cells stay distinguishable.
+            label = _label(child)
+            _walk(child, path + [label] if label else path, cells)
+        elif tag == "dimension":
             _walk(child, path, cells)
 
 

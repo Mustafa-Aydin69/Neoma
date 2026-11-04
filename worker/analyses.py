@@ -158,7 +158,8 @@ def _two_groups(req, info, numeric_only=False):
 
 
 def _autorecode(g):
-    return "AUTORECODE VARIABLES=%s /INTO %s /PRINT." % (g, TMP_GROUP)
+    return ("AUTORECODE VARIABLES=%s /INTO %s /PRINT.\nVARIABLE LABELS %s '%s'."
+            % (g, TMP_GROUP, TMP_GROUP, g))
 
 
 def b_ttest_independent(req, info):
@@ -260,7 +261,9 @@ def b_regression(req, info):
 
 
 def _autorecode_into(var, target):
-    return "AUTORECODE VARIABLES=%s /INTO %s /PRINT.\n" % (var, target)
+    # The label keeps the original name visible in output tables.
+    return ("AUTORECODE VARIABLES=%s /INTO %s /PRINT.\nVARIABLE LABELS %s '%s'.\n"
+            % (var, target, target, var))
 
 
 def b_anova_factorial(req, info):

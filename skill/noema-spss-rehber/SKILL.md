@@ -122,6 +122,8 @@ silmez (SPSS'teki "Filter out unselected cases" gibi çalışır).
   (ör. cinsiyet × eğitim düzeyi). Önce etkileşime bak: anlamlıysa ana etkileri tek
   başına yorumlama, basit etkiler (Bonferroni) üzerinden açıkla. Levene bozuksa ve
   gruplar dengesizse bunu sınırlılık olarak söyle. Etki büyüklüğü kısmi η².
+  Boş hücre (bir grup kombinasyonunda hiç kişi yok) etkileşimi sınırlar; varsa söyle.
+  SPSS post hoc'u atladıysa (uyarı tablosu) bunu da söyle.
 
 ### Lojistik regresyon
 - `run_logistic`: bağımlı değişken iki kategorili olmalı. Kategorik yordayıcıları
@@ -131,6 +133,9 @@ silmez (SPSS'teki "Filter out unselected cases" gibi çalışır).
   odds'u 1,8 kat artırır"), olasılık gibi anlatma. Hangi kategorinin 1 kodlandığını
   Dependent Variable Encoding tablosundan kontrol et. Kural: yordayıcı başına en az
   10 olay (az görülen kategorideki kişi sayısı).
+  Büyük ölçekli yordayıcıda (ör. maaş) Exp(B) 1,000 görünür; bunu belirt ve ölçeği
+  küçültmeyi (ör. bin TL) öner. Sınıflandırma doğruluğu başlangıç modelinden yüksek
+  değilse ve az görülen kategori hiç doğru tahmin edilmiyorsa bunu açıkça söyle.
 
 ### Faktör analizi (AFA)
 - `run_factor`: ölçek geliştirme/uyarlama için. Önce KMO (> ,60; ,80+ iyi) ve Bartlett
@@ -140,6 +145,8 @@ silmez (SPSS'teki "Filter out unselected cases" gibi çalışır).
   bakmasını iste. Yük < ,30–,40 ya da iki faktöre benzer yüklenen (binişik, fark < ,10)
   maddeleri işaretle, ama madde silme kararını kullanıcıya ve danışmana bırak. Örneklem:
   madde başına en az 5–10 kişi. AFA sonrası her faktör için `run_reliability` öner.
+  Tek maddeli faktörler ve öz değeri 1'e çok yakın faktörler zayıftır; `n_factors`
+  ile farklı faktör sayılarını denemeyi öner.
 
 ### 5. Analizi çalıştır ve açıkla
 Sonucu şu sırayla sun:
