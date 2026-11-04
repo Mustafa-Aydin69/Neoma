@@ -23,29 +23,31 @@ import xml.etree.ElementTree as ET
 # and crashes on "ü" (0xfc). We pin a locale Python can both set and parse,
 # then make SPSS's locale lookup fall back to it.
 
-# UTF-8 first: with a 1252 locale, Turkish letters such as "İ" or "ş" in a
-# file path or a value label cannot be passed to spss.Submit.
-LOCALE_CANDIDATES = ("English_United States.utf8", "Turkish_Turkey.1254",
-                     "English_United States.1252", "en_US.UTF-8", "C")
+LOCALE_CANDIDATES = ("Turkish_Turkey.1254", "English_United States.1252",
+                     "en_US.UTF-8", "C")
 
 
-def _usable_locales():
-    ok = []
+def _fix_locale():
     for name in LOCALE_CANDIDATES:
         try:
             locale.setlocale(locale.LC_ALL, name)
             locale.getlocale()  # SPSS calls this while starting
-            ok.append(name)
+            return name
         except (locale.Error, ValueError):
             continue
-    if ok:
-        locale.setlocale(locale.LC_ALL, ok[0])
-    return ok
+    return None
 
 
-USABLE_LOCALES = _usable_locales()
-FIXED_LOCALE = USABLE_LOCALES[0] if USABLE_LOCALES else None
-UNICODE_OK = False
+FIXED_LOCALE = _fix_locale()
+
+# SPSS echoes syntax and tables to stdout (worker.log). With a cp1252 console
+# a Turkish letter such as "I-dot" raised UnicodeEncodeError there, so never
+# let printing fail.
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass
 
 import spss  # noqa: E402  (must come after the locale fix)
 import analyses  # noqa: E402
@@ -63,33 +65,11 @@ def _safe_get_c_locale():
 
 _spss_mod.PyInvokeSpss.GetCLocale = _safe_get_c_locale
 
-TURKISH_PROBE = u"* Noema unicode test: \u0130\u0131\u011e\u011f\u015e\u015f\u00c7\u00e7\u00d6\u00f6\u00dc\u00fc."
-
-
-def choose_locale():
-    """Start SPSS and keep the first locale that can submit Turkish text.
-    If none can, keep the first working one; paths then fall back to the
-    Windows short (8.3) name."""
-    global FIXED_LOCALE, UNICODE_OK
-    for name in USABLE_LOCALES:
-        try:
-            locale.setlocale(locale.LC_ALL, name)
-            FIXED_LOCALE = name
-            spss.Submit(TURKISH_PROBE)
-            UNICODE_OK = True
-            return
-        except Exception:  # noqa: BLE001  (UnicodeEncodeError, SpssError)
-            continue
-    if USABLE_LOCALES:
-        locale.setlocale(locale.LC_ALL, USABLE_LOCALES[0])
-        FIXED_LOCALE = USABLE_LOCALES[0]
-    spss.Submit("SHOW N.")
-
-
 def spss_path(path):
-    """Path safe to put into syntax. Uses the Windows 8.3 short name when the
-    locale cannot carry non-ASCII characters."""
-    if UNICODE_OK or os.name != "nt":
+    """Path safe to put into syntax. SPSS 27 encodes syntax with the 1252 code
+    page, which has no "I-dot", "s-cedilla" or "g-breve", so on Windows a
+    non-ASCII path is replaced by its 8.3 short name (the file is untouched)."""
+    if os.name != "nt":
         return path
     try:
         path.encode("ascii")
@@ -191,8 +171,7 @@ def parse_oxml(xml_path):
 
 def action_ping(req):
     spss.Submit("SHOW N.")
-    return {"ok": True, "locale": FIXED_LOCALE, "unicode": UNICODE_OK,
-            "python": sys.version}
+    return {"ok": True, "locale": FIXED_LOCALE, "python": sys.version}
 
 
 def action_inspect(req):
@@ -368,7 +347,6 @@ def serve(port_file):
 
 
 def main():
-    choose_locale()
     if len(sys.argv) >= 2 and sys.argv[1] == "--test":
         # Manual check: spss_worker.py --test [file.sav]
         req = {"action": "inspect", "path": sys.argv[2]} if len(sys.argv) > 2 else {"action": "ping"}
