@@ -13,6 +13,7 @@ ona göre değiştir. İstatistik sembolleri italik yazılır.
 | Welch ANOVA | F(2, 61,4) = 6,10, p = ,004 | |
 | Karışık desen ANOVA | Zaman × grup etkileşimi anlamlıdır, F(1,17, 18,75) = 5,12, p = ,031, ηp² = ,24 (Greenhouse-Geisser düzeltmeli). | ηp²: ,01 küçük, ,06 orta, ,14 büyük |
 | Pearson / Spearman | Değişkenler arasında pozitif, orta düzeyde anlamlı bir ilişki vardır, r(118) = ,42, p < ,001. | r: ,10 küçük, ,30 orta, ,50 büyük |
+| Çoklu regresyon | Model anlamlıdır, F(2, 471) = 805,1, p < ,001, R² = ,77. Başlangıç maaşı (β = ,80, p < ,001) ve eğitim (β = ,17, p < ,001) maaşı anlamlı biçimde yordamaktadır. Hiyerarşik ise: ikinci blok ΔR² = ,05, ΔF(1, 470) = 12,4, p < ,001. | R²/f²: f² = R²/(1−R²); ,02 küçük, ,15 orta, ,35 büyük (formülü belirt) |
 | Ki-kare | Cinsiyet ile tercih arasında anlamlı bir ilişki vardır, χ²(2, N = 150) = 8,21, p = ,016, V = ,23. | Cramér's V (df'ye göre yorumla) |
 | Mann-Whitney | ... anlamlı düzeyde yüksektir (Mdn = 32 850 ve Mdn = 24 300), U = 9616,5, z = −12,29, p < ,001, r = ,56. | r = \|z\|/√N (SPSS vermez; formülü belirt) |
 | Kruskal-Wallis | H(2) = 9,14, p = ,010 | ε² = H/(N−1) (formülü belirt) |

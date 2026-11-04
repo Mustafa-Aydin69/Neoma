@@ -13,6 +13,10 @@ MENU = {
     "ttest_paired": "Analyze > Compare Means > Paired-Samples T Test",
     "anova_oneway": "Analyze > Compare Means > One-Way ANOVA (Options: Descriptive, Homogeneity of variance, Welch; Post Hoc: Tukey, Games-Howell)",
     "correlation": "Analyze > Correlate > Bivariate (Pearson veya Spearman)",
+    "regression": ("Analyze > Regression > Linear (Dependent; Independent(s), hiyerarsik ise her blok icin Next; "
+                   "Statistics: Estimates, Confidence intervals, Model fit, R squared change, Descriptives, "
+                   "Part and partial correlations, Collinearity diagnostics, Durbin-Watson; "
+                   "Plots: Y=*ZRESID X=*ZPRED, Normal probability plot)"),
     "crosstabs": "Analyze > Descriptive Statistics > Crosstabs (Statistics: Chi-square, Phi and Cramer's V; Cells: Observed, Expected, Row, Column)",
     "mann_whitney": "Analyze > Nonparametric Tests > Legacy Dialogs > 2 Independent Samples (Mann-Whitney U)",
     "kruskal_wallis": "Analyze > Nonparametric Tests > Legacy Dialogs > K Independent Samples (Kruskal-Wallis H)",
@@ -202,6 +206,51 @@ def b_correlation(req, info):
     raise ValueError("method 'pearson' veya 'spearman' olmali")
 
 
+REG_METHODS = {"enter": "ENTER", "stepwise": "STEPWISE"}
+
+
+def regression_blocks(req):
+    blocks = req.get("blocks") or []
+    if blocks and isinstance(blocks[0], str):
+        blocks = [blocks]
+    if not blocks:
+        raise ValueError("En az bir bagimsiz degisken gerekli")
+    return [names(b, label="bagimsiz degisken") for b in blocks]
+
+
+def b_regression(req, info):
+    dep = check_name(req.get("dependent"))
+    blocks = regression_blocks(req)
+    method = REG_METHODS.get(str(req.get("method") or "enter").lower())
+    if not method:
+        raise ValueError("method 'enter' ya da 'stepwise' olmali")
+    seen = set()
+    for b in blocks:
+        for v in b:
+            if v.lower() == dep.lower():
+                raise ValueError("Bagimli degisken bagimsizlar arasinda olamaz: %s" % v)
+            if v.lower() in seen:
+                raise ValueError("Degisken iki kez verildi: %s" % v)
+            seen.add(v.lower())
+            if info(v)["is_string"]:
+                raise ValueError("%s metin (string) degisken. Kategorik yordayicilar icin once "
+                                 "kukla (dummy) degisken olusturulmali." % v)
+    if info(dep)["is_string"]:
+        raise ValueError("Bagimli degisken sayisal olmali: %s" % dep)
+    lines = ["REGRESSION",
+             "  /DESCRIPTIVES MEAN STDDEV CORR SIG N",
+             "  /MISSING LISTWISE",
+             "  /STATISTICS COEFF OUTS CI(95) R ANOVA COLLIN TOL CHANGE ZPP",
+             "  /CRITERIA=PIN(.05) POUT(.10)",
+             "  /NOORIGIN",
+             "  /DEPENDENT %s" % dep]
+    for b in blocks:
+        lines.append("  /METHOD=%s %s" % (method, " ".join(b)))
+    lines += ["  /SCATTERPLOT=(*ZRESID ,*ZPRED)",
+              "  /RESIDUALS DURBIN NORMPROB(ZRESID)."]
+    return "\n".join(lines)
+
+
 def b_crosstabs(req, info):
     r = check_name(req.get("row"))
     c = check_name(req.get("column"))
@@ -364,6 +413,7 @@ BUILDERS = {
     "ttest_paired": b_ttest_paired,
     "anova_oneway": b_anova_oneway,
     "correlation": b_correlation,
+    "regression": b_regression,
     "crosstabs": b_crosstabs,
     "mann_whitney": b_mann_whitney,
     "kruskal_wallis": b_kruskal_wallis,

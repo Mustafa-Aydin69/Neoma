@@ -246,7 +246,7 @@ def action_analysis(req):
     pre, post, cond = analyses.filter_syntax(req.get("filter"), variable_info)
     syntax = pre + syntax + ("\n" + post if post else "")
     # Fail early with a clear message if a variable does not exist.
-    for key in ("variables", "group", "row", "column", "reverse_items"):
+    for key in ("variables", "group", "row", "column", "reverse_items", "dependent"):
         vals = req.get(key)
         for v in ([vals] if isinstance(vals, str) else (vals or [])):
             variable_info(v)

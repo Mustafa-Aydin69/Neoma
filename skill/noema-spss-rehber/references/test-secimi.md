@@ -9,6 +9,7 @@
 | Ölçek güvenilir mi? | Maddeler | — | `run_reliability` (Cronbach alfa; ters maddeler `reverse_items`) | — |
 | Ölçek puanı nasıl? | Maddeler | — | `run_scale_score` (toplam/ortalama + betimsel) | — |
 | İki değişken ilişkili mi? | İki sürekli değişken | — | `run_correlation` (pearson) | `run_correlation` (spearman) |
+| Değişkenler bir sonucu ne kadar yordar? | Sürekli | — | `run_regression` (enter; hiyerarşik bloklar) | — |
 | İki kategorik değişken ilişkili mi? | Kategorik | — | `run_crosstabs` (ki-kare) | — |
 | Örneklem nasıl? | Her tür | — | `run_frequencies`, `run_descriptives` | — |
 

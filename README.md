@@ -32,6 +32,7 @@ Claude Desktop ──MCP──> noema_mcp/server.py  (modern Python 3.10+)
 | `run_wilcoxon` | NPAR TESTS /WILCOXON | Bağımlı t-testinin parametrik olmayan karşılığı |
 | `run_friedman` | NPAR TESTS /FRIEDMAN + /KENDALL | Aynı kişilerde 3+ ölçüm (ön test, son test, izleme) |
 | `run_rm_anova` | GLM /WSFACTOR | Tekrarlı ölçümler ANOVA; `group` ile karışık desen (zaman × grup) |
+| `run_regression` | REGRESSION | Çoklu/hiyerarşik doğrusal regresyon: R², ΔR², β, VIF, Durbin-Watson |
 | `run_reliability` | RELIABILITY | Cronbach alfa, madde-toplam korelasyonları; `reverse_items` + `scale_min`/`scale_max` ile ters maddeler |
 | `run_scale_score` | COMPUTE + DESCRIPTIVES | Maddelerden toplam/ortalama puan (ters maddeler dahil); .sav'a kaydedilmez |
 

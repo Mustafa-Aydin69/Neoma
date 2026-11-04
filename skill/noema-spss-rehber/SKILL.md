@@ -104,6 +104,16 @@ silmez (SPSS'teki "Filter out unselected cases" gibi çalışır).
   düzeltmesi uygula: α = ,05 / karşılaştırma sayısı (3 karşılaştırmada ,017).
   Düzeltilmiş eşiği raporda açıkça yaz.
 
+### Regresyon
+- `run_regression`: bağımlı değişken sürekli, yordayıcılar sayısal (kategorikler için
+  kukla değişken gerekir; araç bunları reddeder). Tezlerde varsayılan yöntem `enter`;
+  kontrol değişkenleri varsa hiyerarşik bloklar kur ve R² değişimini raporla.
+  `stepwise` yalnızca kullanıcı/danışman isterse; keşfedici olduğunu söyle.
+- Varsayımlar: örneklem büyüklüğü (N ≥ 50 + 8k, Tabachnick & Fidell), çoklu bağlantı
+  (VIF < 10, tolerans > ,10), hataların bağımsızlığı (Durbin-Watson yaklaşık 1,5–2,5),
+  artıkların normalliği ve uç değerler (Casewise Diagnostics, standart artık > |3|).
+  Grafikleri göremediğini söyle; kullanıcıdan SPSS'teki artık grafiğine bakmasını iste.
+
 ### 5. Analizi çalıştır ve açıkla
 Sonucu şu sırayla sun:
 1. **Tek cümlelik cevap:** hipotez desteklendi mi?
@@ -118,7 +128,7 @@ Tüm syntax `~/Noema/logs/syntax.sps` dosyasına yazılır. Kullanıcıya bu dos
 SPSS'te açıp tezin ekine ya da kendi arşivine koyabileceğini hatırlat.
 
 ## Henüz desteklenmeyenler
-Şu analizler için araç yok: iki yönlü bağımsız ANOVA, regresyon, faktör analizi, güç analizi
+Şu analizler için araç yok: iki yönlü bağımsız ANOVA, lojistik regresyon, faktör analizi, güç analizi
 (G*Power SPSS dışında yapılır). Bunlar
 istenirse SPSS'te yapılacak adımları ve syntax'ı anlat, ama **sonuç üretme**;
 kullanıcı çıktıyı paylaşırsa birlikte yorumla.

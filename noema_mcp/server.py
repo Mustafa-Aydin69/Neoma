@@ -325,6 +325,26 @@ def run_correlation(path: str, variables: list[str], method: str = "pearson",
 
 
 @mcp.tool()
+def run_regression(path: str, dependent: str, blocks: list[list[str]],
+        method: str = "enter",
+        filter_variable: str | None = None,
+        filter_value: str | float | None = None) -> dict:
+    """Coklu dogrusal regresyon (REGRESSION).
+
+    dependent: bagimli (yordanan) surekli degisken.
+    blocks: yordayicilar, blok blok. Tek blok: [["x1", "x2"]]. Hiyerarsik
+    regresyon: [["yas", "cinsiyet"], ["x1", "x2"]] (her blok R^2 degisimiyle).
+    method: "enter" (varsayilan, tezlerde onerilen) veya "stepwise".
+    Yordayicilar sayisal olmali; kategorik degiskenler icin kukla degisken gerekir.
+    Cikti: model ozeti (R, R^2, duzeltilmis R^2, R^2 degisimi, Durbin-Watson),
+    ANOVA, katsayilar (B, beta, t, p, %95 GA, kismi/yari kismi r, tolerans, VIF),
+    artik istatistikleri.
+    """
+    return analysis("regression", path, filter_variable=filter_variable, filter_value=filter_value,
+                    dependent=dependent, blocks=blocks, method=method)
+
+
+@mcp.tool()
 def run_crosstabs(path: str, row: str, column: str,
         filter_variable: str | None = None,
         filter_value: str | float | None = None) -> dict:
