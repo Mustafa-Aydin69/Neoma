@@ -243,8 +243,8 @@ def action_analysis(req):
     path = req["path"]
     spss.Submit(open_dataset(path))
     syntax = analyses.BUILDERS[kind](req, variable_info)
-    pre, cond = analyses.filter_syntax(req.get("filter"), variable_info)
-    syntax = pre + syntax
+    pre, post, cond = analyses.filter_syntax(req.get("filter"), variable_info)
+    syntax = pre + syntax + ("\n" + post if post else "")
     # Fail early with a clear message if a variable does not exist.
     for key in ("variables", "group", "row", "column"):
         vals = req.get(key)

@@ -28,14 +28,18 @@ EXACT_NOTE = " (Exact... dugmesi > Exact)"
 
 
 def filter_syntax(flt, info):
-    """Keep only the cases where variable == value. Applies to the working
-    copy only; the .sav file is never saved."""
+    """Analyse only the cases where variable == value, like Data > Select
+    Cases > "Filter out unselected cases". FILTER (not SELECT IF) so that the
+    logged syntax never deletes cases when the user reruns it in SPSS.
+    Returns (before, after, condition)."""
     if not flt:
-        return "", None
+        return "", "", None
     var = check_name(flt.get("variable"))
     is_str = info(var)["is_string"]
     cond = "%s = %s" % (var, literal(flt.get("value"), is_str))
-    return "SELECT IF (%s).\nEXECUTE.\n" % cond, cond
+    before = ("* Noema: yalnizca %s olan vakalar analiz edilir (vakalar silinmez).\n"
+              "COMPUTE noema_filt = (%s).\nFILTER BY noema_filt.\nEXECUTE.\n" % (cond, cond))
+    return before, "FILTER OFF.\nUSE ALL.\n", cond
 
 
 def _exact(req):

@@ -15,7 +15,7 @@ ona göre değiştir. İstatistik sembolleri italik yazılır.
 | Ki-kare | Cinsiyet ile tercih arasında anlamlı bir ilişki vardır, χ²(2, N = 150) = 8,21, p = ,016, V = ,23. | Cramér's V (df'ye göre yorumla) |
 | Mann-Whitney | ... anlamlı düzeyde yüksektir (Mdn = 32 850 ve Mdn = 24 300), U = 9616,5, z = −12,29, p < ,001, r = ,56. | r = \|z\|/√N (SPSS vermez; formülü belirt) |
 | Kruskal-Wallis | H(2) = 9,14, p = ,010 | ε² = H/(N−1) (formülü belirt) |
-| Wilcoxon | z = −3,05, p = ,002, r = ,48 | r = \|z\|/√N |
+| Wilcoxon | z = −3,05, p = ,002, r = ,48 | r = \|z\|/√N. N için iki gelenek var: çift sayısı (n) veya gözlem sayısı (2n; Pallant). Hangisini kullandığını notta yaz. |
 | Friedman | Puanlar üç ölçüm arasında anlamlı düzeyde farklılaşmaktadır, χ²(2, N = 9) = 12,67, p = ,002, W = ,70. Bonferroni düzeltmeli Wilcoxon testlerine göre (α = ,017)... | Kendall's W (SPSS verir): ,1 küçük, ,3 orta, ,5 büyük |
 | Cronbach alfa | Ölçeğin bu örneklemdeki iç tutarlılık katsayısı α = ,84 bulunmuştur. | ,70 ve üzeri yeterli kabul edilir; küçük örneklemde düşük çıkabilir |
 
