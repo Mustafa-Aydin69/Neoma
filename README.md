@@ -15,11 +15,23 @@ Claude Desktop ──MCP──> noema_mcp/server.py  (modern Python 3.10+)
 İki Python kullanmamızın sebebi şu: MCP kütüphanesi 3.10 veya üstünü istiyor, SPSS 27'deki `spss` modülü ise yalnızca 3.8 ile çalışıyor.
 
 ## Araçlar
-| Araç | Ne yapar |
-|---|---|
-| `check_spss` | SPSS motorunun açılıp açılmadığını test eder |
-| `inspect_dataset(path)` | Değişkenleri, etiketleri, ölçüm düzeyini, değer etiketlerini ve eksik değer tanımlarını getirir |
-| `run_descriptives(path, variables, statistics?)` | DESCRIPTIVES komutunu çalıştırır ve gerçek SPSS tablosunu ve syntax'ı döndürür |
+| Araç | SPSS komutu | Ne zaman |
+|---|---|---|
+| `check_spss` | SHOW N | Bağlantı testi |
+| `inspect_dataset` | (Dataset API) | Değişkenler, etiketler, ölçüm düzeyi, eksik değer tanımları |
+| `run_descriptives` | DESCRIPTIVES | Sürekli değişkenlerin özeti |
+| `run_frequencies` | FREQUENCIES | Kategorik/demografik değişkenler |
+| `run_normality` | EXAMINE | Kolmogorov-Smirnov ve Shapiro-Wilk, gruplara göre de yapılabilir |
+| `run_ttest_independent` | T-TEST GROUPS | İki bağımsız grup (Levene ve Cohen's d dahil) |
+| `run_ttest_paired` | T-TEST PAIRS | Ön test/son test |
+| `run_anova_oneway` | ONEWAY | 3+ grup: Levene, Welch, eta-kare, Tukey/Games-Howell |
+| `run_correlation` | CORRELATIONS / NONPAR CORR | Pearson veya Spearman |
+| `run_crosstabs` | CROSSTABS | Ki-kare, Phi/Cramer's V, beklenen frekanslar |
+| `run_mann_whitney` | NPAR TESTS /M-W | Bağımsız t-testinin parametrik olmayan karşılığı |
+| `run_kruskal_wallis` | NPAR TESTS /K-W | ANOVA'nın parametrik olmayan karşılığı |
+| `run_wilcoxon` | NPAR TESTS /WILCOXON | Bağımlı t-testinin parametrik olmayan karşılığı |
+
+Her analiz aracı şunları döndürür: çalışan SPSS syntax'ı (`syntax`), aynı işlemin SPSS menüsündeki yolu (`spss_menu`, İngilizce arayüz) ve tüm çıktı tabloları (`tables`). Syntax builder'ları `worker/analyses.py` içinde. Değişken adları doğrulanıyor, kullanıcıdan gelen ham syntax çalıştırılmıyor.
 
 Her çalıştırma `~/Noema/logs/runs.jsonl` dosyasına (istek ve sonuç), kullanılan syntax da `~/Noema/logs/syntax.sps` dosyasına eklenir. `.sps` dosyası doğrudan SPSS'te açılıp çalıştırılabilir.
 
@@ -62,4 +74,5 @@ Windows 11, bölge adını `Turkish_Türkiye.1254` olarak veriyor. SPSS 27 bu ad
 ## Durum (2026-11-04)
 - SPSS 27 / Windows 11 (Türkçe bölge ayarı) üzerinde uçtan uca doğrulandı: Claude Desktop Chat, `check_spss`, `inspect_dataset` ve `run_descriptives` çalışıyor, gerçek SPSS tablosu geliyor.
 - macOS'taki SPSS Python yolları tahmin; gerçek bir Mac kurulumunda doğrulanması gerekiyor.
-- Sırada: rehber skill; frekans, normallik, t-testi, ANOVA ve korelasyon araçları; `.mcpb` paketi.
+- Analiz araçları (frekans ... Wilcoxon) sahte `spss` modülüyle test edildi, gerçek SPSS'te henüz denenmedi.
+- Sırada: rehber skill, SPSS motorunu oturum boyunca açık tutmak, `.mcpb` paketi.

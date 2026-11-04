@@ -38,6 +38,7 @@ def _fix_locale():
 FIXED_LOCALE = _fix_locale()
 
 import spss  # noqa: E402  (must come after the locale fix)
+import analyses  # noqa: E402
 
 _spss_mod = sys.modules["spss.spss"]
 _orig_get_c_locale = _spss_mod.PyInvokeSpss.GetCLocale
@@ -75,7 +76,7 @@ def run_syntax_capture(syntax):
     os.close(fd)
     full = "\n".join([
         "SET OLANG=ENGLISH.",
-        "OMS /SELECT TABLES /DESTINATION FORMAT=OXML OUTFILE=%s /TAG='noema'." % q(xml_path),
+        "OMS /SELECT TABLES WARNINGS /DESTINATION FORMAT=OXML OUTFILE=%s /TAG='noema'." % q(xml_path),
         syntax,
         "OMSEND TAG=['noema'].",
     ])
@@ -187,34 +188,44 @@ def describe_missing(mv):
     return {"raw": list(mv)}
 
 
-VALID_STATS = {"MEAN", "STDDEV", "MIN", "MAX", "VARIANCE", "RANGE", "SUM",
-               "SEMEAN", "KURTOSIS", "SKEWNESS"}
+def variable_info(name):
+    """Look up a variable in the active dataset (call after GET FILE)."""
+    for i in range(spss.GetVariableCount()):
+        if spss.GetVariableName(i).lower() == name.lower():
+            return {"index": i, "is_string": spss.GetVariableType(i) > 0}
+    raise ValueError("Degisken bulunamadi: %s" % name)
+
+
+def action_analysis(req):
+    kind = req["kind"]
+    if kind not in analyses.BUILDERS:
+        raise ValueError("Bilinmeyen analiz: %s" % kind)
+    path = req["path"]
+    spss.Submit(open_dataset(path))
+    syntax = analyses.BUILDERS[kind](req, variable_info)
+    # Fail early with a clear message if a variable does not exist.
+    for key in ("variables", "group", "row", "column"):
+        vals = req.get(key)
+        for v in ([vals] if isinstance(vals, str) else (vals or [])):
+            variable_info(v)
+    for pair in req.get("pairs") or []:
+        for v in pair:
+            variable_info(v)
+    syntax, tables = run_syntax_capture(syntax)
+    return {"path": path, "analysis": kind, "syntax": syntax,
+            "spss_menu": analyses.MENU.get(kind), "tables": tables}
 
 
 def action_descriptives(req):
-    path = req["path"]
-    variables = req["variables"]
-    stats = [s.upper() for s in req.get("statistics") or
-             ["MEAN", "STDDEV", "MIN", "MAX", "SKEWNESS", "KURTOSIS"]]
-    bad = [s for s in stats if s not in VALID_STATS]
-    if bad:
-        raise ValueError("Gecersiz istatistik: %s" % ", ".join(bad))
-    if not variables:
-        raise ValueError("En az bir degisken gerekli")
-    for name in variables:
-        if not name.replace("_", "").replace(".", "").replace("@", "").replace("#", "").replace("$", "").isalnum():
-            raise ValueError("Gecersiz degisken adi: %s" % name)
-    spss.Submit(open_dataset(path))
-    syntax = "DESCRIPTIVES VARIABLES=%s\n  /STATISTICS=%s." % (
-        " ".join(variables), " ".join(stats))
-    syntax, tables = run_syntax_capture(syntax)
-    return {"path": path, "syntax": syntax, "tables": tables}
+    req = dict(req, kind="descriptives")
+    return action_analysis(req)
 
 
 ACTIONS = {
     "ping": action_ping,
     "inspect": action_inspect,
     "descriptives": action_descriptives,
+    "analysis": action_analysis,
 }
 
 
