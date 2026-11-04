@@ -12,7 +12,12 @@ import os
 import platform
 import subprocess
 import sys
+import atexit
+import secrets
+import socket
 import tempfile
+import threading
+import time
 from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
@@ -21,6 +26,11 @@ ROOT = Path(__file__).resolve().parent.parent
 WORKER = ROOT / "worker" / "spss_worker.py"
 LOG_DIR = Path(os.environ.get("NOEMA_LOG_DIR", Path.home() / "Noema" / "logs"))
 TIMEOUT = int(os.environ.get("NOEMA_TIMEOUT", "300"))
+# 1 (default): keep one SPSS engine running between calls. 0: start SPSS per call.
+PERSISTENT = os.environ.get("NOEMA_PERSISTENT", "1") != "0"
+IDLE_SECONDS = int(float(os.environ.get("NOEMA_IDLE_MINUTES", "30")) * 60)
+START_TIMEOUT = int(os.environ.get("NOEMA_START_TIMEOUT", "180"))
+NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 
 INSTRUCTIONS = """Noema, yerel IBM SPSS Statistics motorunda analiz calistirir.
 Kurallar:
@@ -54,7 +64,111 @@ def find_spss_python() -> str:
     return hits[-1]  # newest version
 
 
-def call_worker(request: dict) -> dict:
+class WarmWorker:
+    """One long-lived SPSS worker, reached over a localhost socket.
+
+    Started on first use. If it dies (idle timeout, crash, SPSS error that
+    kills the engine) it is restarted once, transparently, on the next call.
+    """
+
+    def __init__(self) -> None:
+        self.lock = threading.Lock()
+        self.proc: subprocess.Popen | None = None
+        self.stream = None
+        self.sock: socket.socket | None = None
+        self.token = ""
+        self.started_at = 0.0
+
+    def _start(self) -> None:
+        self._stop()
+        self.token = secrets.token_hex(16)
+        tmpdir = tempfile.mkdtemp(prefix="noema_")
+        port_file = os.path.join(tmpdir, "port")
+        LOG_DIR.mkdir(parents=True, exist_ok=True)
+        log = open(LOG_DIR / "worker.log", "ab")
+        env = dict(os.environ, NOEMA_TOKEN=self.token,
+                   NOEMA_IDLE_SECONDS=str(IDLE_SECONDS))
+        self.proc = subprocess.Popen(
+            [find_spss_python(), str(WORKER), "--serve", port_file],
+            stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT,
+            env=env, creationflags=NO_WINDOW,
+        )
+        log.close()
+        deadline = time.monotonic() + START_TIMEOUT
+        while not os.path.exists(port_file):
+            if self.proc.poll() is not None:
+                raise RuntimeError("SPSS isci sureci baslarken kapandi. "
+                                   f"Ayrinti: {LOG_DIR / 'worker.log'}")
+            if time.monotonic() > deadline:
+                self._stop()
+                raise RuntimeError("SPSS motoru zamaninda baslamadi.")
+            time.sleep(0.2)
+        port = int(Path(port_file).read_text())
+        self.sock = socket.create_connection(("127.0.0.1", port), timeout=10)
+        self.sock.settimeout(TIMEOUT)
+        self.stream = self.sock.makefile("rwb")
+        self.started_at = time.monotonic()
+
+    def _alive(self) -> bool:
+        return self.proc is not None and self.proc.poll() is None and self.stream is not None
+
+    def _stop(self) -> None:
+        for closer in (getattr(self.stream, "close", None), getattr(self.sock, "close", None)):
+            try:
+                if closer:
+                    closer()
+            except OSError:
+                pass
+        if self.proc and self.proc.poll() is None:
+            try:
+                self.proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                self.proc.kill()
+        self.proc = self.stream = self.sock = None
+
+    def request(self, req: dict) -> dict:
+        with self.lock:
+            last_error = None
+            for _ in range(2):  # one transparent restart
+                fresh = False
+                try:
+                    if not self._alive():
+                        self._start()
+                        fresh = True
+                    payload = dict(req, token=self.token)
+                    self.stream.write((json.dumps(payload, ensure_ascii=False) + "\n").encode("utf-8"))
+                    self.stream.flush()
+                    line = self.stream.readline()
+                    if not line:
+                        raise ConnectionError("Isci sureci baglantiyi kapatti")
+                    resp = json.loads(line.decode("utf-8"))
+                    resp["engine"] = "yeni baslatildi" if fresh else "sicak"
+                    return resp
+                except socket.timeout:
+                    self._stop()
+                    return {"ok": False, "error": f"SPSS {TIMEOUT} sn icinde yanit vermedi; motor yeniden baslatilacak."}
+                except (OSError, ConnectionError, ValueError) as e:
+                    last_error = e
+                    self._stop()
+            return {"ok": False, "error": f"SPSS isci sureciyle iletisim kurulamadi: {last_error}",
+                    "log": str(LOG_DIR / "worker.log")}
+
+    def shutdown(self) -> None:
+        with self.lock:
+            if self._alive():
+                try:
+                    self.stream.write((json.dumps({"action": "shutdown", "token": self.token}) + "\n").encode())
+                    self.stream.flush()
+                except OSError:
+                    pass
+            self._stop()
+
+
+WORKER_POOL = WarmWorker()
+atexit.register(WORKER_POOL.shutdown)
+
+
+def call_worker_oneshot(request: dict) -> dict:
     with tempfile.TemporaryDirectory(prefix="noema_") as tmp:
         req_path = Path(tmp) / "request.json"
         resp_path = Path(tmp) / "response.json"
@@ -63,13 +177,19 @@ def call_worker(request: dict) -> dict:
             [find_spss_python(), str(WORKER), str(req_path), str(resp_path)],
             # stdin must NOT be inherited: it is the MCP stdio pipe.
             stdin=subprocess.DEVNULL, capture_output=True, timeout=TIMEOUT,
-            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+            creationflags=NO_WINDOW,
         )
         if not resp_path.exists():
             return {"ok": False, "error": "Isci sureci yanit yazmadi.",
                     "returncode": proc.returncode,
                     "stderr": proc.stderr.decode("utf-8", "replace")[-4000:]}
-        resp = json.loads(resp_path.read_text(encoding="utf-8"))
+        return json.loads(resp_path.read_text(encoding="utf-8"))
+
+
+def call_worker(request: dict) -> dict:
+    t0 = time.monotonic()
+    resp = WORKER_POOL.request(request) if PERSISTENT else call_worker_oneshot(request)
+    resp["elapsed_seconds"] = round(time.monotonic() - t0, 2)
     log_run(request, resp)
     return resp
 

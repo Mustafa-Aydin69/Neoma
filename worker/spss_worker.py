@@ -238,6 +238,76 @@ ACTIONS = {
 }
 
 
+def handle(req):
+    try:
+        return {"ok": True, "result": ACTIONS[req["action"]](req)}
+    except spss.SpssError as e:
+        return {"ok": False, "error": "SPSS hatasi: %s" % e,
+                "spss_last_error": _last_error()}
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "error": "%s: %s" % (type(e).__name__, e),
+                "traceback": traceback.format_exc()}
+
+
+def serve(port_file):
+    """Keep the SPSS engine warm and answer requests over a localhost socket.
+
+    Protocol: one JSON object per line in each direction. Every request must
+    carry the token from NOEMA_TOKEN. The worker exits when the MCP server
+    disconnects (so it never outlives Claude) or after NOEMA_IDLE_SECONDS
+    without a request.
+    """
+    import socket
+    token = os.environ.get("NOEMA_TOKEN", "")
+    idle = float(os.environ.get("NOEMA_IDLE_SECONDS", "1800"))
+    if not token:
+        raise SystemExit("NOEMA_TOKEN gerekli")
+    spss.Submit("SHOW N.")  # start the engine before announcing the port
+    srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    srv.bind(("127.0.0.1", 0))
+    srv.listen(1)
+    srv.settimeout(120)  # the server should connect right away
+    tmp = port_file + ".tmp"
+    with open(tmp, "w") as f:
+        f.write(str(srv.getsockname()[1]))
+    os.replace(tmp, port_file)
+    try:
+        conn, _ = srv.accept()
+    except socket.timeout:
+        return
+    srv.close()
+    conn.settimeout(idle)
+    stream = conn.makefile("rwb")
+    try:
+        while True:
+            try:
+                line = stream.readline()
+            except socket.timeout:
+                break  # idle too long
+            if not line:
+                break  # MCP server went away
+            try:
+                req = json.loads(line.decode("utf-8"))
+            except ValueError:
+                resp = {"ok": False, "error": "Gecersiz istek"}
+            else:
+                if req.get("token") != token:
+                    resp = {"ok": False, "error": "Yetkisiz istek"}
+                elif req.get("action") == "shutdown":
+                    stream.write(b'{"ok": true}\n')
+                    stream.flush()
+                    break
+                else:
+                    resp = handle(req)
+            stream.write((json.dumps(resp, ensure_ascii=False) + "\n").encode("utf-8"))
+            stream.flush()
+    finally:
+        try:
+            conn.close()
+        except OSError:
+            pass
+
+
 def main():
     if len(sys.argv) >= 2 and sys.argv[1] == "--test":
         # Manual check: spss_worker.py --test [file.sav]
@@ -247,23 +317,21 @@ def main():
         print(json.dumps(out, ensure_ascii=False, indent=2))
         spss.StopSPSS()
         return
-    req_path, resp_path = sys.argv[1], sys.argv[2]
-    with open(req_path, encoding="utf-8") as f:
-        req = json.load(f)
     try:
-        result = {"ok": True, "result": ACTIONS[req["action"]](req)}
-    except spss.SpssError as e:
-        result = {"ok": False, "error": "SPSS hatasi: %s" % e,
-                  "spss_last_error": _last_error()}
-    except Exception as e:  # noqa: BLE001
-        result = {"ok": False, "error": "%s: %s" % (type(e).__name__, e),
-                  "traceback": traceback.format_exc()}
-    with open(resp_path, "w", encoding="utf-8") as f:
-        json.dump(result, f, ensure_ascii=False)
-    try:
-        spss.StopSPSS()
-    except Exception:  # noqa: BLE001
-        pass
+        if len(sys.argv) >= 3 and sys.argv[1] == "--serve":
+            serve(sys.argv[2])
+        else:
+            # One-shot mode: spss_worker.py request.json response.json
+            req_path, resp_path = sys.argv[1], sys.argv[2]
+            with open(req_path, encoding="utf-8") as f:
+                result = handle(json.load(f))
+            with open(resp_path, "w", encoding="utf-8") as f:
+                json.dump(result, f, ensure_ascii=False)
+    finally:
+        try:
+            spss.StopSPSS()
+        except Exception:  # noqa: BLE001
+            pass
 
 
 def _last_error():

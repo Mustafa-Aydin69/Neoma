@@ -69,10 +69,18 @@ Windows 11, bölge adını `Turkish_Türkiye.1254` olarak veriyor. SPSS 27 bu ad
 ## Ayarlar (ortam değişkenleri)
 - `NOEMA_SPSS_PYTHON`: SPSS'in python.exe yolu. Verilmezse olağan kurulum klasörlerinde aranır.
 - `NOEMA_LOG_DIR`: Kayıt klasörü. Varsayılan `~/Noema/logs`.
-- `NOEMA_TIMEOUT`: Saniye cinsinden zaman aşımı. Varsayılan 300.
+- `NOEMA_TIMEOUT`: Tek analiz için saniye cinsinden zaman aşımı. Varsayılan 300.
+- `NOEMA_PERSISTENT`: `1` (varsayılan) SPSS motorunu çağrılar arasında açık tutar. `0` her çağrıda SPSS'i yeniden başlatır (eski davranış).
+- `NOEMA_IDLE_MINUTES`: Motor bu kadar dakika boyunca kullanılmazsa kapanır, sonraki çağrıda yeniden açılır. Varsayılan 30.
+- `NOEMA_START_TIMEOUT`: Motorun açılması için beklenecek süre (sn). Varsayılan 180.
+
+### Sıcak motor nasıl çalışıyor
+İlk araç çağrısında `spss_worker.py --serve` başlar, SPSS motorunu açar ve yalnızca `127.0.0.1` üzerinde rastgele bir portu dinler. Her istek, sunucunun ürettiği rastgele bir token taşır. Sunucu kapanınca (Claude kapatılınca) bağlantı kopar ve işçi de kendini kapatır, arkada SPSS süreci kalmaz. İşçi çökerse sonraki çağrıda bir kez otomatik yeniden başlatılır. Her yanıtta `engine` ("sicak" / "yeni baslatildi") ve `elapsed_seconds` alanları bulunur. İşçinin konsol çıktısı `~/Noema/logs/worker.log` dosyasına yazılır.
 
 ## Durum (2026-11-04)
 - SPSS 27 / Windows 11 (Türkçe bölge ayarı) üzerinde uçtan uca doğrulandı: Claude Desktop Chat, `check_spss`, `inspect_dataset` ve `run_descriptives` çalışıyor, gerçek SPSS tablosu geliyor.
 - macOS'taki SPSS Python yolları tahmin; gerçek bir Mac kurulumunda doğrulanması gerekiyor.
 - Analiz araçları (frekans ... Wilcoxon) sahte `spss` modülüyle test edildi, gerçek SPSS'te henüz denenmedi.
-- Sırada: rehber skill, SPSS motorunu oturum boyunca açık tutmak, `.mcpb` paketi.
+- Sıcak motor (kalıcı işçi) sahte SPSS ile test edildi: yeniden kullanım, çökme sonrası yeniden başlatma, boşta kapanma ve sunucu öldürülünce işçinin kapanması.
+- Rehber skill: `skill/noema-spss-rehber/`.
+- Sırada: `.mcpb` paketi, Cronbach alfa ve ölçek puanı hesaplama araçları.
