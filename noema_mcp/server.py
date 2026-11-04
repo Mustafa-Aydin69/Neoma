@@ -224,12 +224,19 @@ def inspect_dataset(path: str) -> dict:
     return call_worker({"action": "inspect", "path": path})
 
 
-def analysis(kind: str, path: str, **params) -> dict:
+def analysis(kind: str, path: str, filter_variable=None, filter_value=None, **params) -> dict:
     req = {"action": "analysis", "kind": kind, "path": path}
+    if filter_variable:
+        if filter_value is None:
+            return {"ok": False, "error": "filter_variable verildiyse filter_value da gerekli"}
+        req["filter"] = {"variable": filter_variable, "value": filter_value}
     req.update({k: v for k, v in params.items() if v is not None})
     return call_worker(req)
 
 
+# Every analysis tool also accepts filter_variable/filter_value to analyse one
+# subgroup only (e.g. grup = 1 for the experimental group); the nonparametric
+# tools accept exact=True for exact p-values (recommended when n is small).
 # Every analysis tool returns: syntax (exact SPSS syntax that ran), spss_menu
 # (where the same dialog lives in the SPSS GUI, English UI) and tables
 # (every output table, flattened to cells with a row/column path).
@@ -237,102 +244,153 @@ def analysis(kind: str, path: str, **params) -> dict:
 
 @mcp.tool()
 def run_descriptives(path: str, variables: list[str],
-                     statistics: list[str] | None = None) -> dict:
+                     statistics: list[str] | None = None,
+        filter_variable: str | None = None,
+        filter_value: str | float | None = None) -> dict:
     """Betimsel istatistik (DESCRIPTIVES). Surekli/olcek degiskenler icin.
 
     statistics: MEAN, STDDEV, MIN, MAX, VARIANCE, RANGE, SUM, SEMEAN,
                 SKEWNESS, KURTOSIS. Bos: MEAN STDDEV MIN MAX SKEWNESS KURTOSIS.
     """
-    return analysis("descriptives", path, variables=variables, statistics=statistics)
+    return analysis("descriptives", path, filter_variable=filter_variable, filter_value=filter_value, variables=variables, statistics=statistics)
 
 
 @mcp.tool()
 def run_frequencies(path: str, variables: list[str],
-                    statistics: list[str] | None = None) -> dict:
+                    statistics: list[str] | None = None,
+        filter_variable: str | None = None,
+        filter_value: str | float | None = None) -> dict:
     """Frekans tablosu (FREQUENCIES). Kategorik degiskenler ve demografik bilgiler icin.
 
     statistics (istege bagli): MEAN, MEDIAN, MODE, STDDEV, VARIANCE, MINIMUM,
                 MAXIMUM, RANGE, SKEWNESS, KURTOSIS, SEMEAN, SUM.
     """
-    return analysis("frequencies", path, variables=variables, statistics=statistics)
+    return analysis("frequencies", path, filter_variable=filter_variable, filter_value=filter_value, variables=variables, statistics=statistics)
 
 
 @mcp.tool()
-def run_normality(path: str, variables: list[str], group: str | None = None) -> dict:
+def run_normality(path: str, variables: list[str], group: str | None = None,
+        filter_variable: str | None = None,
+        filter_value: str | float | None = None) -> dict:
     """Normallik testi (EXAMINE): Kolmogorov-Smirnov ve Shapiro-Wilk, carpiklik/basiklik.
 
     group verilirse her grup icin ayri test yapilir (t-testi/ANOVA oncesi bu kullanilmali).
     """
-    return analysis("normality", path, variables=variables, group=group)
+    return analysis("normality", path, filter_variable=filter_variable, filter_value=filter_value, variables=variables, group=group)
 
 
 @mcp.tool()
 def run_ttest_independent(path: str, variables: list[str], group: str,
-                          group_values: list[str | float]) -> dict:
+                          group_values: list[str | float],
+        filter_variable: str | None = None,
+        filter_value: str | float | None = None) -> dict:
     """Bagimsiz orneklem t-testi. Levene testi ve etki buyuklugu (Cohen's d) dahil.
 
     group: iki gruplu degisken; group_values: karsilastirilacak iki kod, or. [1, 2] veya ["f", "m"].
     """
-    return analysis("ttest_independent", path, variables=variables,
+    return analysis("ttest_independent", path, filter_variable=filter_variable, filter_value=filter_value, variables=variables,
                     group=group, group_values=group_values)
 
 
 @mcp.tool()
-def run_ttest_paired(path: str, pairs: list[list[str]]) -> dict:
+def run_ttest_paired(path: str, pairs: list[list[str]],
+        filter_variable: str | None = None,
+        filter_value: str | float | None = None) -> dict:
     """Bagimli (eslestirilmis) orneklem t-testi, etki buyuklugu dahil.
 
     pairs: [["on_test", "son_test"], ...]
     """
-    return analysis("ttest_paired", path, pairs=pairs)
+    return analysis("ttest_paired", path, filter_variable=filter_variable, filter_value=filter_value, pairs=pairs)
 
 
 @mcp.tool()
 def run_anova_oneway(path: str, variables: list[str], group: str,
-                     posthoc: list[str] | None = None) -> dict:
+                     posthoc: list[str] | None = None,
+        filter_variable: str | None = None,
+        filter_value: str | float | None = None) -> dict:
     """Tek yonlu ANOVA: betimsel, Levene, Welch, eta-kare ve post hoc.
 
     group: sayisal kodlu grup degiskeni. posthoc: TUKEY, GH (Games-Howell),
     BONFERRONI, SCHEFFE, LSD, T2, DUNNETT. Bos: TUKEY GH.
     """
-    return analysis("anova_oneway", path, variables=variables, group=group, posthoc=posthoc)
+    return analysis("anova_oneway", path, filter_variable=filter_variable, filter_value=filter_value, variables=variables, group=group, posthoc=posthoc)
 
 
 @mcp.tool()
-def run_correlation(path: str, variables: list[str], method: str = "pearson") -> dict:
+def run_correlation(path: str, variables: list[str], method: str = "pearson",
+        filter_variable: str | None = None,
+        filter_value: str | float | None = None) -> dict:
     """Korelasyon matrisi. method: "pearson" (normal dagilim) veya "spearman" (siralama/normal degil)."""
-    return analysis("correlation", path, variables=variables, method=method)
+    return analysis("correlation", path, filter_variable=filter_variable, filter_value=filter_value, variables=variables, method=method)
 
 
 @mcp.tool()
-def run_crosstabs(path: str, row: str, column: str) -> dict:
+def run_crosstabs(path: str, row: str, column: str,
+        filter_variable: str | None = None,
+        filter_value: str | float | None = None) -> dict:
     """Capraz tablo ve ki-kare testi (Phi/Cramer's V ve beklenen frekanslar dahil)."""
-    return analysis("crosstabs", path, row=row, column=column)
+    return analysis("crosstabs", path, filter_variable=filter_variable, filter_value=filter_value, row=row, column=column)
 
 
 @mcp.tool()
 def run_mann_whitney(path: str, variables: list[str], group: str,
-                     group_values: list[str | float]) -> dict:
+                     group_values: list[str | float],
+        exact: bool = False,
+        filter_variable: str | None = None,
+        filter_value: str | float | None = None) -> dict:
     """Mann-Whitney U: normal dagilmayan veride bagimsiz t-testinin alternatifi."""
-    return analysis("mann_whitney", path, variables=variables,
+    return analysis("mann_whitney", path, filter_variable=filter_variable, filter_value=filter_value, exact=exact, variables=variables,
                     group=group, group_values=group_values)
 
 
 @mcp.tool()
 def run_kruskal_wallis(path: str, variables: list[str], group: str,
-                       group_range: list[float] | None = None) -> dict:
+                       group_range: list[float] | None = None,
+        exact: bool = False,
+        filter_variable: str | None = None,
+        filter_value: str | float | None = None) -> dict:
     """Kruskal-Wallis H: normal dagilmayan veride tek yonlu ANOVA'nin alternatifi.
 
     group_range: sayisal grup kodlarinin en kucugu ve en buyugu, or. [1, 4].
     Metin tipindeki grup degiskenlerinde gerekmez (otomatik kodlanir).
     """
-    return analysis("kruskal_wallis", path, variables=variables,
+    return analysis("kruskal_wallis", path, filter_variable=filter_variable, filter_value=filter_value, exact=exact, variables=variables,
                     group=group, group_range=group_range)
 
 
 @mcp.tool()
-def run_wilcoxon(path: str, pairs: list[list[str]]) -> dict:
+def run_wilcoxon(path: str, pairs: list[list[str]],
+        exact: bool = False,
+        filter_variable: str | None = None,
+        filter_value: str | float | None = None) -> dict:
     """Wilcoxon isaretli siralar: normal dagilmayan veride bagimli t-testinin alternatifi."""
-    return analysis("wilcoxon", path, pairs=pairs)
+    return analysis("wilcoxon", path, filter_variable=filter_variable, filter_value=filter_value, exact=exact, pairs=pairs)
+
+
+@mcp.tool()
+def run_friedman(path: str, variables: list[str], exact: bool = False,
+        filter_variable: str | None = None,
+        filter_value: str | float | None = None) -> dict:
+    """Friedman testi + Kendall's W: ayni kisilerin 3+ olcumu (or. on test, son test, izleme).
+
+    Tekrarli olcumler ANOVA'nin parametrik olmayan karsiligidir. Anlamliysa
+    ikili karsilastirmalar run_wilcoxon ile yapilir (Bonferroni: alfa / karsilastirma sayisi).
+    """
+    return analysis("friedman", path, filter_variable=filter_variable, filter_value=filter_value,
+                    variables=variables, exact=exact)
+
+
+@mcp.tool()
+def run_reliability(path: str, variables: list[str], scale_name: str | None = None,
+        filter_variable: str | None = None,
+        filter_value: str | float | None = None) -> dict:
+    """Guvenirlik analizi (Cronbach alfa). variables: olcegin MADDE degiskenleri.
+
+    Madde-toplam korelasyonlari ve 'madde silinirse alfa' tablosu dahildir.
+    Ters kodlanmasi gereken maddeler varsa once kullaniciya sor.
+    """
+    return analysis("reliability", path, filter_variable=filter_variable, filter_value=filter_value,
+                    variables=variables, scale_name=scale_name)
 
 
 def main() -> None:

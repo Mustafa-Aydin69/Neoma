@@ -212,6 +212,8 @@ def action_analysis(req):
     path = req["path"]
     spss.Submit(open_dataset(path))
     syntax = analyses.BUILDERS[kind](req, variable_info)
+    pre, cond = analyses.filter_syntax(req.get("filter"), variable_info)
+    syntax = pre + syntax
     # Fail early with a clear message if a variable does not exist.
     for key in ("variables", "group", "row", "column"):
         vals = req.get(key)
@@ -221,8 +223,13 @@ def action_analysis(req):
         for v in pair:
             variable_info(v)
     syntax, tables = run_syntax_capture(syntax)
-    return {"path": path, "analysis": kind, "syntax": syntax,
-            "spss_menu": analyses.MENU.get(kind), "tables": tables}
+    menu = analyses.MENU.get(kind)
+    if cond:
+        menu = (analyses.FILTER_MENU % cond) + " ; sonra " + menu
+    if req.get("exact"):
+        menu += analyses.EXACT_NOTE
+    return {"path": path, "analysis": kind, "filter": cond, "syntax": syntax,
+            "spss_menu": menu, "tables": tables}
 
 
 def action_descriptives(req):

@@ -50,6 +50,8 @@ Türkçe, sade ve sıcak bir dille konuş; terimleri ilk geçtiği yerde kısaca
 - Eksik değer tanımları (ör. 99, 9) tanımlı mı? Tanımsızsa analiz bunları gerçek
   değer sayar; bu ciddi bir hata kaynağıdır.
 - Vaka sayısı beklenenle uyuşuyor mu?
+- Ölçek puanları hazır mı? Sadece maddeler varsa güvenirlik için `run_reliability`
+  maddelerle çalıştırılır; toplam puan hesaplamak için henüz araç yok.
 
 ### 3. Testi seç
 `references/test-secimi.md` tablosunu kullan. Gerekçeyi bir iki cümleyle açıkla.
@@ -64,7 +66,21 @@ Türkçe, sade ve sıcak bir dille konuş; terimleri ilk geçtiği yerde kısaca
   Games-Howell'i kullan.
 - **Ki-kare:** beklenen frekansı 5'ten küçük hücre oranı %20'yi geçmemeli.
   2x2 tablolarda gerekiyorsa Fisher kesin testine bak.
+- **Uç değerler:** `run_normality` çıktısındaki Extreme Values tablosuna bak.
 - Varsayım bozulursa parametrik olmayan karşılığa geç ve nedenini açıkla.
+- **Küçük örneklem (grup başına n < 30):** Parametrik olmayan testlerde `exact=True`
+  kullan ve "Exact Sig." değerini raporla.
+
+### Alt grup analizleri
+Deney/kontrol desenlerinde grup içi testler (ör. sadece deney grubunda ön test-son
+test) için `filter_variable` ve `filter_value` kullan (ör. `grup`, `1`). Hangi grubun
+hangi kodla tutulduğunu `inspect_dataset` değer etiketlerinden doğrula.
+
+### Tekrarlı ölçümler (ön test, son test, izleme)
+- 3 ve üzeri ölçüm: `run_friedman` (Kendall's W etki büyüklüğü dahil).
+- Friedman anlamlıysa ikili karşılaştırmalar `run_wilcoxon` ile yapılır. Bonferroni
+  düzeltmesi uygula: α = ,05 / karşılaştırma sayısı (3 karşılaştırmada ,017).
+  Düzeltilmiş eşiği raporda açıkça yaz.
 
 ### 5. Analizi çalıştır ve açıkla
 Sonucu şu sırayla sun:
@@ -79,7 +95,8 @@ Tüm syntax `~/Noema/logs/syntax.sps` dosyasına yazılır. Kullanıcıya bu dos
 SPSS'te açıp tezin ekine ya da kendi arşivine koyabileceğini hatırlat.
 
 ## Henüz desteklenmeyenler
-Şu analizler için araç yok: güvenirlik (Cronbach alfa), ölçek puanı hesaplama
-(COMPUTE), iki yönlü/tekrarlı ölçümler ANOVA, regresyon, faktör analizi. Bunlar
+Şu analizler için araç yok: ölçek puanı hesaplama (COMPUTE), ters madde kodlama,
+iki yönlü/tekrarlı ölçümler ANOVA (GLM), regresyon, faktör analizi, güç analizi
+(G*Power SPSS dışında yapılır). Bunlar
 istenirse SPSS'te yapılacak adımları ve syntax'ı anlat, ama **sonuç üretme**;
 kullanıcı çıktıyı paylaşırsa birlikte yorumla.

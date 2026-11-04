@@ -17,7 +17,28 @@ MENU = {
     "mann_whitney": "Analyze > Nonparametric Tests > Legacy Dialogs > 2 Independent Samples (Mann-Whitney U)",
     "kruskal_wallis": "Analyze > Nonparametric Tests > Legacy Dialogs > K Independent Samples (Kruskal-Wallis H)",
     "wilcoxon": "Analyze > Nonparametric Tests > Legacy Dialogs > 2 Related Samples (Wilcoxon)",
+    "friedman": "Analyze > Nonparametric Tests > Legacy Dialogs > K Related Samples (Friedman, Kendall's W)",
+    "reliability": "Analyze > Scale > Reliability Analysis (Model: Alpha; Statistics: Item, Scale, Scale if item deleted)",
 }
+
+FILTER_MENU = "Once: Data > Select Cases > If condition is satisfied > %s"
+
+EXACT_NOTE = " (Exact... dugmesi > Exact)"
+
+
+def filter_syntax(flt, info):
+    """Keep only the cases where variable == value. Applies to the working
+    copy only; the .sav file is never saved."""
+    if not flt:
+        return "", None
+    var = check_name(flt.get("variable"))
+    is_str = info(var)["is_string"]
+    cond = "%s = %s" % (var, literal(flt.get("value"), is_str))
+    return "SELECT IF (%s).\nEXECUTE.\n" % cond, cond
+
+
+def _exact(req):
+    return "\n  /METHOD=EXACT TIMER(5)" if req.get("exact") else ""
 
 
 def check_name(name):
@@ -87,7 +108,7 @@ def b_normality(req, info):
     syntax = "EXAMINE VARIABLES=%s" % " ".join(v)
     if by:
         syntax += " BY %s" % check_name(by)
-    syntax += "\n  /PLOT BOXPLOT NPPLOT\n  /STATISTICS DESCRIPTIVES\n  /CINTERVAL 95\n  /MISSING LISTWISE"
+    syntax += "\n  /PLOT BOXPLOT NPPLOT\n  /STATISTICS DESCRIPTIVES EXTREME\n  /CINTERVAL 95\n  /MISSING LISTWISE"
     syntax += "\n  /NOTOTAL." if by else "\n  /TOTAL."
     return syntax
 
@@ -182,7 +203,7 @@ def b_mann_whitney(req, info):
     dv = names(req.get("variables"))
     prelude, grp = _two_groups(req, info, numeric_only=True)
     return (prelude + "\n" if prelude else "") + (
-        "NPAR TESTS\n  /M-W= %s BY %s\n  /STATISTICS=DESCRIPTIVES QUARTILES\n  /MISSING ANALYSIS." % (" ".join(dv), grp))
+        "NPAR TESTS\n  /M-W= %s BY %s\n  /STATISTICS=DESCRIPTIVES QUARTILES\n  /MISSING ANALYSIS%s." % (" ".join(dv), grp, _exact(req)))
 
 
 def b_kruskal_wallis(req, info):
@@ -197,13 +218,27 @@ def b_kruskal_wallis(req, info):
         lo, hi = req.get("group_range") or [None, None]
     if lo is None or hi is None:
         raise ValueError("group_range gerekli, or. [1, 3]")
-    return prelude + ("NPAR TESTS\n  /K-W=%s BY %s(%s %s)\n  /STATISTICS=DESCRIPTIVES QUARTILES\n  /MISSING ANALYSIS."
-            % (" ".join(dv), g, literal(lo, False), literal(hi, False)))
+    return prelude + ("NPAR TESTS\n  /K-W=%s BY %s(%s %s)\n  /STATISTICS=DESCRIPTIVES QUARTILES\n  /MISSING ANALYSIS%s."
+            % (" ".join(dv), g, literal(lo, False), literal(hi, False), _exact(req)))
 
 
 def b_wilcoxon(req, info):
-    return ("NPAR TESTS\n  /WILCOXON=%s\n  /STATISTICS=DESCRIPTIVES QUARTILES\n  /MISSING ANALYSIS."
-            % _pairs(req))
+    return ("NPAR TESTS\n  /WILCOXON=%s\n  /STATISTICS=DESCRIPTIVES QUARTILES\n  /MISSING ANALYSIS%s."
+            % (_pairs(req), _exact(req)))
+
+
+def b_friedman(req, info):
+    v = names(req.get("variables"), minimum=3, label="olcum (ör. on, son, izleme)")
+    return ("NPAR TESTS\n  /FRIEDMAN=%s\n  /STATISTICS=DESCRIPTIVES QUARTILES\n  /MISSING LISTWISE%s.\n"
+            "NPAR TESTS\n  /KENDALL=%s\n  /MISSING LISTWISE%s."
+            % (" ".join(v), _exact(req), " ".join(v), _exact(req)))
+
+
+def b_reliability(req, info):
+    items = names(req.get("variables"), minimum=2, label="madde")
+    label = str(req.get("scale_name") or "Olcek").replace("'", "")[:60]
+    return ("RELIABILITY\n  /VARIABLES=%s\n  /SCALE('%s') ALL\n  /MODEL=ALPHA\n"
+            "  /STATISTICS=DESCRIPTIVE SCALE\n  /SUMMARY=TOTAL." % (" ".join(items), label))
 
 
 BUILDERS = {
@@ -218,4 +253,6 @@ BUILDERS = {
     "mann_whitney": b_mann_whitney,
     "kruskal_wallis": b_kruskal_wallis,
     "wilcoxon": b_wilcoxon,
+    "friedman": b_friedman,
+    "reliability": b_reliability,
 }

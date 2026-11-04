@@ -30,6 +30,10 @@ Claude Desktop ──MCP──> noema_mcp/server.py  (modern Python 3.10+)
 | `run_mann_whitney` | NPAR TESTS /M-W | Bağımsız t-testinin parametrik olmayan karşılığı |
 | `run_kruskal_wallis` | NPAR TESTS /K-W | ANOVA'nın parametrik olmayan karşılığı |
 | `run_wilcoxon` | NPAR TESTS /WILCOXON | Bağımlı t-testinin parametrik olmayan karşılığı |
+| `run_friedman` | NPAR TESTS /FRIEDMAN + /KENDALL | Aynı kişilerde 3+ ölçüm (ön test, son test, izleme) |
+| `run_reliability` | RELIABILITY | Cronbach alfa, madde-toplam korelasyonları |
+
+Tüm analiz araçları `filter_variable` / `filter_value` alır (ör. sadece deney grubu: `grup` = `1`). Parametrik olmayan testler `exact=True` ile kesin p değeri verir, küçük örneklemlerde önerilir. Exact Tests modülü gerekir.
 
 Her analiz aracı şunları döndürür: çalışan SPSS syntax'ı (`syntax`), aynı işlemin SPSS menüsündeki yolu (`spss_menu`, İngilizce arayüz) ve tüm çıktı tabloları (`tables`). Syntax builder'ları `worker/analyses.py` içinde. Değişken adları doğrulanıyor, kullanıcıdan gelen ham syntax çalıştırılmıyor.
 
