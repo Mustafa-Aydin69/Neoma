@@ -16,6 +16,9 @@ Türkçe, sade ve sıcak bir dille konuş; terimleri ilk geçtiği yerde kısaca
    tabloları sadece `noema-spss` araçlarından al. Python ile, elle ya da tahminle
    hesaplama yapma. Bir araç hata verirse hatayı açıkça söyle, nedenini ve SPSS'te
    nasıl çözüleceğini anlat; sonucu başka yoldan üretme.
+   İstenen analiz için araç yoksa bunu söyle ve dur; başka bir aracın çıktısından
+   formülle türetme (ör. korelasyonlardan R² hesaplama). Araç beklenip görünmüyorsa
+   kullanıcıya `git pull` yapıp Claude'u tamamen kapatıp açmasını söyle.
 2. **Türetilen değerler formülüyle verilir.** SPSS'in vermediği bir etki büyüklüğünü
    (ör. Mann-Whitney için r = |Z|/√N) SPSS çıktısındaki değerlerden hesaplayabilirsin,
    ama formülü ve "SPSS çıktısından hesaplandı" notunu mutlaka yaz.
