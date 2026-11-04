@@ -50,8 +50,21 @@ Türkçe, sade ve sıcak bir dille konuş; terimleri ilk geçtiği yerde kısaca
 - Eksik değer tanımları (ör. 99, 9) tanımlı mı? Tanımsızsa analiz bunları gerçek
   değer sayar; bu ciddi bir hata kaynağıdır.
 - Vaka sayısı beklenenle uyuşuyor mu?
-- Ölçek puanları hazır mı? Sadece maddeler varsa güvenirlik için `run_reliability`
-  maddelerle çalıştırılır; toplam puan hesaplamak için henüz araç yok.
+- Ölçek puanları hazır mı? Sadece maddeler varsa güvenirlik için `run_reliability`,
+  toplam/ortalama puan için `run_scale_score` maddelerle çalıştırılır.
+
+### Ters maddeler
+- Güvenirlikten ve puan hesaplamadan önce ölçeğin ters maddelerini ve puan aralığını
+  (ör. 1–4) sor. Kaynak, ölçeğin orijinal makalesidir.
+- Maddeler veride **zaten çevrilmiş olabilir** (ör. Recode into Same Variables ile).
+  Kullanıcı emin değilse önce `reverse_items` vermeden güvenirlik çalıştır: ters
+  maddelerde negatif madde-toplam korelasyonu çevrilmediklerine işaret eder. Asla
+  iki kez çevirme.
+- Çevirmek gerekirse `reverse_items`, `scale_min`, `scale_max` ver. Araç yeni
+  değişkenler (`noema_r_MADDE`) üretir; orijinal maddeler ve .sav değişmez.
+- `run_scale_score` ile hesaplanan puan yalnızca o çalışmada vardır. Diğer analizlerde
+  kullanmak için kullanıcı syntax'ı SPSS'te çalıştırıp dosyayı kendisi kaydetmelidir;
+  bunu açıkça söyle.
 
 ### 3. Testi seç
 `references/test-secimi.md` tablosunu kullan. Gerekçeyi bir iki cümleyle açıkla.
@@ -98,8 +111,7 @@ Tüm syntax `~/Noema/logs/syntax.sps` dosyasına yazılır. Kullanıcıya bu dos
 SPSS'te açıp tezin ekine ya da kendi arşivine koyabileceğini hatırlat.
 
 ## Henüz desteklenmeyenler
-Şu analizler için araç yok: ölçek puanı hesaplama (COMPUTE), ters madde kodlama,
-iki yönlü bağımsız ANOVA, regresyon, faktör analizi, güç analizi
+Şu analizler için araç yok: iki yönlü bağımsız ANOVA, regresyon, faktör analizi, güç analizi
 (G*Power SPSS dışında yapılır). Bunlar
 istenirse SPSS'te yapılacak adımları ve syntax'ı anlat, ama **sonuç üretme**;
 kullanıcı çıktıyı paylaşırsa birlikte yorumla.

@@ -399,15 +399,42 @@ def run_rm_anova(path: str, variables: list[str], group: str | None = None,
 
 @mcp.tool()
 def run_reliability(path: str, variables: list[str], scale_name: str | None = None,
+        reverse_items: list[str] | None = None,
+        scale_min: float | None = None, scale_max: float | None = None,
         filter_variable: str | None = None,
         filter_value: str | float | None = None) -> dict:
     """Guvenirlik analizi (Cronbach alfa). variables: olcegin MADDE degiskenleri.
 
     Madde-toplam korelasyonlari ve 'madde silinirse alfa' tablosu dahildir.
-    Ters kodlanmasi gereken maddeler varsa once kullaniciya sor.
+    reverse_items: ters puanlanacak maddeler (variables icinden); scale_min ve
+    scale_max ile birlikte verilir (or. 1-4 olcek icin 1 ve 4). Ters maddeler
+    yeni degiskenlere (noema_r_MADDE = min+max - MADDE) cevrilir; orijinal
+    maddeler ve .sav degismez. Maddeler veride ZATEN cevrilmis olabilir: emin
+    degilsen kullaniciya sor, iki kez cevirme.
     """
     return analysis("reliability", path, filter_variable=filter_variable, filter_value=filter_value,
-                    variables=variables, scale_name=scale_name)
+                    variables=variables, scale_name=scale_name, reverse_items=reverse_items,
+                    scale_min=scale_min, scale_max=scale_max)
+
+
+@mcp.tool()
+def run_scale_score(path: str, variables: list[str], method: str = "sum",
+        score_name: str | None = None,
+        reverse_items: list[str] | None = None,
+        scale_min: float | None = None, scale_max: float | None = None,
+        filter_variable: str | None = None,
+        filter_value: str | float | None = None) -> dict:
+    """Maddelerden olcek puani hesaplar (COMPUTE) ve betimsel istatistigini verir.
+
+    method: 'sum' (toplam) ya da 'mean' (ortalama); bir maddesi bos olan kisiye
+    puan verilmez. reverse_items/scale_min/scale_max run_reliability ile ayni.
+    Puan yalnizca bu calismada vardir, .sav dosyasina kaydedilmez; diger
+    analizlerde kullanmak icin kullanici syntax'i SPSS'te calistirip kendisi
+    kaydetmelidir.
+    """
+    return analysis("scale_score", path, filter_variable=filter_variable, filter_value=filter_value,
+                    variables=variables, method=method, score_name=score_name,
+                    reverse_items=reverse_items, scale_min=scale_min, scale_max=scale_max)
 
 
 def main() -> None:

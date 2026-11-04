@@ -32,7 +32,8 @@ Claude Desktop ──MCP──> noema_mcp/server.py  (modern Python 3.10+)
 | `run_wilcoxon` | NPAR TESTS /WILCOXON | Bağımlı t-testinin parametrik olmayan karşılığı |
 | `run_friedman` | NPAR TESTS /FRIEDMAN + /KENDALL | Aynı kişilerde 3+ ölçüm (ön test, son test, izleme) |
 | `run_rm_anova` | GLM /WSFACTOR | Tekrarlı ölçümler ANOVA; `group` ile karışık desen (zaman × grup) |
-| `run_reliability` | RELIABILITY | Cronbach alfa, madde-toplam korelasyonları |
+| `run_reliability` | RELIABILITY | Cronbach alfa, madde-toplam korelasyonları; `reverse_items` + `scale_min`/`scale_max` ile ters maddeler |
+| `run_scale_score` | COMPUTE + DESCRIPTIVES | Maddelerden toplam/ortalama puan (ters maddeler dahil); .sav'a kaydedilmez |
 
 Tüm analiz araçları `filter_variable` / `filter_value` alır (ör. sadece deney grubu: `grup` = `1`). Parametrik olmayan testler `exact=True` ile kesin p değeri verir, küçük örneklemlerde önerilir. Exact Tests modülü gerekir.
 

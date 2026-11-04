@@ -20,7 +20,13 @@ MENU = {
     "friedman": "Analyze > Nonparametric Tests > Legacy Dialogs > K Related Samples (Friedman, Kendall's W)",
     "rm_anova": "Analyze > General Linear Model > Repeated Measures (Within-Subject Factor Name: %(factor)s, Number of Levels: %(k)d > Add > Define; olcumleri sirayla atayin%(between)s; Options/EM Means: Descriptive statistics, Estimates of effect size%(homog)s, Compare main effects > Bonferroni)",
     "reliability": "Analyze > Scale > Reliability Analysis (Model: Alpha; Statistics: Item, Scale, Scale if item deleted)",
+    "scale_score": "Transform > Compute Variable (Target Variable: %(name)s; Numeric Expression: %(expr)s) ; sonra Analyze > Descriptive Statistics > Descriptives",
 }
+
+REVERSE_MENU = ("Once her ters madde icin: Transform > Compute Variable "
+                "(Target Variable: noema_r_MADDE; Numeric Expression: %s - MADDE)")
+
+REVERSE_PREFIX = "noema_r_"
 
 FILTER_MENU = "Once: Data > Select Cases > If condition is satisfied > %s"
 
@@ -239,11 +245,79 @@ def b_friedman(req, info):
             % (" ".join(v), _exact(req), " ".join(v), _exact(req)))
 
 
+def reverse_items(req, items, info):
+    """Reverse-score some items into NEW variables noema_r_<item> =
+    (scale_min + scale_max) - item. The original items are never changed and
+    the file is never saved. Returns (syntax_before, items_to_use)."""
+    rev = req.get("reverse_items") or []
+    if not rev:
+        return "", items
+    rev = names(rev, label="ters madde")
+    lower = dict((i.lower(), i) for i in items)
+    for r in rev:
+        if r.lower() not in lower:
+            raise ValueError("Ters madde %s, variables listesinde yok" % r)
+        if info(r)["is_string"]:
+            raise ValueError("Ters madde sayisal olmali: %s" % r)
+    try:
+        lo, hi = float(req["scale_min"]), float(req["scale_max"])
+    except (KeyError, TypeError, ValueError):
+        raise ValueError("Ters madde icin scale_min ve scale_max gerekli (or. 1 ve 4)")
+    if lo >= hi:
+        raise ValueError("scale_min, scale_max'tan kucuk olmali")
+    total = lo + hi
+    total_txt = ("%d" % total) if total == int(total) else ("%g" % total)
+    lines = ["* Noema: ters maddeler yeni degiskenlere cevrilir (%s - madde); orijinal maddeler degismez." % total_txt]
+    out = list(items)
+    rev_l = set(r.lower() for r in rev)
+    for idx, item in enumerate(items):
+        if item.lower() in rev_l:
+            new = REVERSE_PREFIX + item
+            if len(new) > 64:
+                raise ValueError("Degisken adi cok uzun: %s" % item)
+            lines.append("COMPUTE %s = %s - %s." % (new, total_txt, item))
+            lines.append("VARIABLE LABELS %s '%s (ters)'." % (new, item))
+            out[idx] = new
+    lines.append("EXECUTE.")
+    return "\n".join(lines) + "\n", out
+
+
+def reverse_total(req):
+    return "%g" % (float(req["scale_min"]) + float(req["scale_max"]))
+
+
 def b_reliability(req, info):
     items = names(req.get("variables"), minimum=2, label="madde")
+    pre, items = reverse_items(req, items, info)
     label = str(req.get("scale_name") or "Olcek").replace("'", "")[:60]
-    return ("RELIABILITY\n  /VARIABLES=%s\n  /SCALE('%s') ALL\n  /MODEL=ALPHA\n"
+    return pre + ("RELIABILITY\n  /VARIABLES=%s\n  /SCALE('%s') ALL\n  /MODEL=ALPHA\n"
             "  /STATISTICS=DESCRIPTIVE SCALE\n  /SUMMARY=TOTAL." % (" ".join(items), label))
+
+
+def scale_score_expr(req):
+    items = names(req.get("variables"), minimum=2, label="madde")
+    method = str(req.get("method") or "sum").lower()
+    if method not in ("sum", "mean"):
+        raise ValueError("method 'sum' ya da 'mean' olmali")
+    # SUM.n / MEAN.n: score only when every item is answered, so a missing
+    # item never silently lowers a total.
+    return items, method, "%s.%d(%%s)" % ("SUM" if method == "sum" else "MEAN", len(items))
+
+
+def b_scale_score(req, info):
+    items, method, fmt = scale_score_expr(req)
+    name = check_name(req.get("score_name") or "noema_puan")
+    try:
+        info(name)
+    except ValueError:
+        pass  # good: the name is free
+    else:
+        raise ValueError("%s adinda bir degisken zaten var; baska bir score_name verin" % name)
+    pre, used = reverse_items(req, items, info)
+    expr = fmt % ", ".join(used)
+    return pre + ("COMPUTE %s = %s.\nEXECUTE.\n"
+                  "DESCRIPTIVES VARIABLES=%s\n  /STATISTICS=MEAN STDDEV MIN MAX SKEWNESS KURTOSIS."
+                  % (name, expr, name))
 
 
 def b_rm_anova(req, info):
@@ -296,5 +370,6 @@ BUILDERS = {
     "wilcoxon": b_wilcoxon,
     "friedman": b_friedman,
     "reliability": b_reliability,
+    "scale_score": b_scale_score,
     "rm_anova": b_rm_anova,
 }

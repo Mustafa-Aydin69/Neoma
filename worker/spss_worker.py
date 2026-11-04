@@ -246,7 +246,7 @@ def action_analysis(req):
     pre, post, cond = analyses.filter_syntax(req.get("filter"), variable_info)
     syntax = pre + syntax + ("\n" + post if post else "")
     # Fail early with a clear message if a variable does not exist.
-    for key in ("variables", "group", "row", "column"):
+    for key in ("variables", "group", "row", "column", "reverse_items"):
         vals = req.get(key)
         for v in ([vals] if isinstance(vals, str) else (vals or [])):
             variable_info(v)
@@ -255,6 +255,14 @@ def action_analysis(req):
             variable_info(v)
     syntax, tables = run_syntax_capture(syntax)
     menu = analyses.rm_anova_menu(req) if kind == "rm_anova" else analyses.MENU.get(kind)
+    if kind == "scale_score":
+        items, _, fmt = analyses.scale_score_expr(req)
+        rev = set(r.lower() for r in (req.get("reverse_items") or []))
+        used = [analyses.REVERSE_PREFIX + i if i.lower() in rev else i for i in items]
+        menu = menu % {"name": req.get("score_name") or "noema_puan",
+                       "expr": fmt % ", ".join(used)}
+    if req.get("reverse_items"):
+        menu = (analyses.REVERSE_MENU % analyses.reverse_total(req)) + " ; sonra " + menu
     if cond:
         menu = (analyses.FILTER_MENU % cond) + " ; sonra " + menu
     if req.get("exact"):
