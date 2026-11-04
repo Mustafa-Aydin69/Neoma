@@ -11,6 +11,7 @@ ona göre değiştir. İstatistik sembolleri italik yazılır.
 | Bağımlı t | Son test puanları (O = 4,1) ön testten (O = 3,5) anlamlı düzeyde yüksektir, t(39) = 3,20, p = ,003, d = 0,51. | Cohen's d |
 | Tek yönlü ANOVA | Puanlar eğitim düzeyine göre farklılaşmaktadır, F(2, 117) = 5,84, p = ,004, η² = ,09. Tukey testine göre fark lisans ve lisansüstü grupları arasındadır. | η²: ,01 küçük, ,06 orta, ,14 büyük |
 | Welch ANOVA | F(2, 61,4) = 6,10, p = ,004 | |
+| Karışık desen ANOVA | Zaman × grup etkileşimi anlamlıdır, F(1,17, 18,75) = 5,12, p = ,031, ηp² = ,24 (Greenhouse-Geisser düzeltmeli). | ηp²: ,01 küçük, ,06 orta, ,14 büyük |
 | Pearson / Spearman | Değişkenler arasında pozitif, orta düzeyde anlamlı bir ilişki vardır, r(118) = ,42, p < ,001. | r: ,10 küçük, ,30 orta, ,50 büyük |
 | Ki-kare | Cinsiyet ile tercih arasında anlamlı bir ilişki vardır, χ²(2, N = 150) = 8,21, p = ,016, V = ,23. | Cramér's V (df'ye göre yorumla) |
 | Mann-Whitney | ... anlamlı düzeyde yüksektir (Mdn = 32 850 ve Mdn = 24 300), U = 9616,5, z = −12,29, p < ,001, r = ,56. | r = \|z\|/√N (SPSS vermez; formülü belirt) |

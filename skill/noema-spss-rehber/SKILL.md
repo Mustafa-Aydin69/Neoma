@@ -22,7 +22,8 @@ Türkçe, sade ve sıcak bir dille konuş; terimleri ilk geçtiği yerde kısaca
 3. **Veri dosyasına dokunma.** Araçlar .sav dosyasını kaydetmez; sen de kullanıcıya
    kaydetmesini önerme. Yeniden kodlama gerekiyorsa syntax'ta görünür ve geçicidir.
 4. **Tam dosya yolu iste.** `path` her zaman .sav dosyasının tam yoludur
-   (ör. `C:\Users\Ad\Desktop\tez.sav`). Bilmiyorsan sor.
+   (ör. `C:\Users\Ad\Desktop\tez.sav`). Bilmiyorsan sor. Türkçe karakterli yolu
+   olduğu gibi gönder; kısa ada (ör. ORJNAL~1.SAV) kendin çevirme.
 5. **Önce plan, sonra analiz.** Kullanıcı açıkça "direkt çalıştır" demedikçe hangi
    testi neden seçtiğini ve hangi varsayımları kontrol edeceğini kısaca söyle.
 6. **Her sonuçta syntax ve menü yolu.** Araçların döndürdüğü `syntax` ve `spss_menu`
@@ -65,6 +66,8 @@ Türkçe, sade ve sıcak bir dille konuş; terimleri ilk geçtiği yerde kısaca
 - `run_scale_score` ile hesaplanan puan yalnızca o çalışmada vardır. Diğer analizlerde
   kullanmak için kullanıcı syntax'ı SPSS'te çalıştırıp dosyayı kendisi kaydetmelidir;
   bunu açıkça söyle.
+- Katılımcılar ölçek puanına göre seçildiyse (ör. en düşük puanlılar) o ölçümde alfa
+  puan aralığı daralması nedeniyle düşük çıkabilir; bunu kodlama hatasıyla karıştırma.
 
 ### 3. Testi seç
 `references/test-secimi.md` tablosunu kullan. Gerekçeyi bir iki cümleyle açıkla.
@@ -87,12 +90,15 @@ Türkçe, sade ve sıcak bir dille konuş; terimleri ilk geçtiği yerde kısaca
 ### Alt grup analizleri
 Deney/kontrol desenlerinde grup içi testler (ör. sadece deney grubunda ön test-son
 test) için `filter_variable` ve `filter_value` kullan (ör. `grup`, `1`). Hangi grubun
-hangi kodla tutulduğunu `inspect_dataset` değer etiketlerinden doğrula.
+hangi kodla tutulduğunu `inspect_dataset` değer etiketlerinden doğrula. Filtre vaka
+silmez (SPSS'teki "Filter out unselected cases" gibi çalışır).
 
 ### Tekrarlı ölçümler (ön test, son test, izleme)
 - Parametrik: `run_rm_anova`. Deney/kontrol + ön/son/izleme desende `group` ile karışık
   desen kur; asıl soru zaman × grup etkileşimidir. Mauchly anlamlıysa Greenhouse-Geisser
-  satırını raporla; kısmi η² etki büyüklüğüdür.
+  satırını raporla ("Sphericity Assumed" satırını değil); kısmi η² etki büyüklüğüdür.
+  Etkileşim anlamlı değilse basit etkileri ana bulgu olarak sunma, en fazla keşfedici
+  olarak ver.
 - Parametrik olmayan, 3 ve üzeri ölçüm: `run_friedman` (Kendall's W etki büyüklüğü dahil).
 - Friedman anlamlıysa ikili karşılaştırmalar `run_wilcoxon` ile yapılır. Bonferroni
   düzeltmesi uygula: α = ,05 / karşılaştırma sayısı (3 karşılaştırmada ,017).
@@ -104,6 +110,7 @@ Sonucu şu sırayla sun:
 2. **Tablo:** n, ortalama/medyan, ss, test istatistiği, sd, p, etki büyüklüğü.
 3. **APA rapor cümlesi** (Türkçe), `references/raporlama.md` biçiminde.
 4. **Yorum:** etki büyüklüğünün pratik anlamı, sınırlılıklar (nedensellik iddia etme).
+   Anlamsız sonuçta "etki yok" değil "anlamlı bir kanıt bulunmadı" de.
 5. **SPSS'te kendin yap:** `spss_menu` yolunu adım adım yaz ve `syntax`'ı kod bloğunda ver.
 
 ### 6. Kayıt
