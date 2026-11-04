@@ -223,7 +223,7 @@ def action_analysis(req):
         for v in pair:
             variable_info(v)
     syntax, tables = run_syntax_capture(syntax)
-    menu = analyses.MENU.get(kind)
+    menu = analyses.rm_anova_menu(req) if kind == "rm_anova" else analyses.MENU.get(kind)
     if cond:
         menu = (analyses.FILTER_MENU % cond) + " ; sonra " + menu
     if req.get("exact"):

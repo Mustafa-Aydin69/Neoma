@@ -18,6 +18,7 @@ MENU = {
     "kruskal_wallis": "Analyze > Nonparametric Tests > Legacy Dialogs > K Independent Samples (Kruskal-Wallis H)",
     "wilcoxon": "Analyze > Nonparametric Tests > Legacy Dialogs > 2 Related Samples (Wilcoxon)",
     "friedman": "Analyze > Nonparametric Tests > Legacy Dialogs > K Related Samples (Friedman, Kendall's W)",
+    "rm_anova": "Analyze > General Linear Model > Repeated Measures (Within-Subject Factor Name: %(factor)s, Number of Levels: %(k)d > Add > Define; olcumleri sirayla atayin%(between)s; Options/EM Means: Descriptive statistics, Estimates of effect size%(homog)s, Compare main effects > Bonferroni)",
     "reliability": "Analyze > Scale > Reliability Analysis (Model: Alpha; Statistics: Item, Scale, Scale if item deleted)",
 }
 
@@ -241,6 +242,42 @@ def b_reliability(req, info):
             "  /STATISTICS=DESCRIPTIVE SCALE\n  /SUMMARY=TOTAL." % (" ".join(items), label))
 
 
+def b_rm_anova(req, info):
+    v = names(req.get("variables"), minimum=2, label="olcum (or. on, son, izleme)")
+    factor = check_name(req.get("factor_name") or "zaman")
+    between = req.get("group")
+    prelude, design = "", ""
+    lines = ["GLM %s" % " ".join(v)]
+    if between:
+        g = check_name(between)
+        if info(g)["is_string"]:
+            prelude, g = _autorecode(g) + "\n", TMP_GROUP
+        lines[0] += " BY %s" % g
+    lines.append("  /WSFACTOR=%s %d Polynomial" % (factor, len(v)))
+    lines.append("  /METHOD=SSTYPE(3)")
+    lines.append("  /EMMEANS=TABLES(%s) COMPARE ADJ(BONFERRONI)" % factor)
+    if between:
+        lines.append("  /EMMEANS=TABLES(%s) COMPARE ADJ(BONFERRONI)" % g)
+        lines.append("  /EMMEANS=TABLES(%s*%s) COMPARE(%s) ADJ(BONFERRONI)" % (g, factor, factor))
+        lines.append("  /EMMEANS=TABLES(%s*%s) COMPARE(%s) ADJ(BONFERRONI)" % (g, factor, g))
+        lines.append("  /PRINT=DESCRIPTIVE ETASQ HOMOGENEITY")
+    else:
+        lines.append("  /PRINT=DESCRIPTIVE ETASQ")
+    lines.append("  /CRITERIA=ALPHA(.05)")
+    lines.append("  /WSDESIGN=%s" % factor)
+    lines.append("  /DESIGN=%s." % g if between else "  /DESIGN.")
+    return prelude + "\n".join(lines)
+
+
+def rm_anova_menu(req):
+    k = len(req.get("variables") or [])
+    between = req.get("group")
+    return MENU["rm_anova"] % {
+        "factor": req.get("factor_name") or "zaman", "k": k,
+        "between": ("; Between-Subjects Factor(s): %s" % between) if between else "",
+        "homog": ", Homogeneity tests" if between else ""}
+
+
 BUILDERS = {
     "descriptives": b_descriptives,
     "frequencies": b_frequencies,
@@ -255,4 +292,5 @@ BUILDERS = {
     "wilcoxon": b_wilcoxon,
     "friedman": b_friedman,
     "reliability": b_reliability,
+    "rm_anova": b_rm_anova,
 }

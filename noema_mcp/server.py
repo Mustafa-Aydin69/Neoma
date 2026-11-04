@@ -381,6 +381,23 @@ def run_friedman(path: str, variables: list[str], exact: bool = False,
 
 
 @mcp.tool()
+def run_rm_anova(path: str, variables: list[str], group: str | None = None,
+        factor_name: str = "zaman",
+        filter_variable: str | None = None,
+        filter_value: str | float | None = None) -> dict:
+    """Tekrarli olcumler ANOVA (GLM). variables: ayni kisilerin olcumleri, sirayla
+    (or. ["CatOnTop", "CatSonTop", "CatIzlTop"]).
+
+    group verilirse karisik desen (zaman x grup) yapilir: Box M, Mauchly kuresellik,
+    Levene, kismi eta-kare, Bonferroni'li ikili karsilastirmalar ve basit etkiler dahil.
+    Kuresellik bozuksa Greenhouse-Geisser satiri raporlanmalidir.
+    Advanced Statistics modulu gerekir.
+    """
+    return analysis("rm_anova", path, filter_variable=filter_variable, filter_value=filter_value,
+                    variables=variables, group=group, factor_name=factor_name)
+
+
+@mcp.tool()
 def run_reliability(path: str, variables: list[str], scale_name: str | None = None,
         filter_variable: str | None = None,
         filter_value: str | float | None = None) -> dict:

@@ -77,7 +77,10 @@ test) için `filter_variable` ve `filter_value` kullan (ör. `grup`, `1`). Hangi
 hangi kodla tutulduğunu `inspect_dataset` değer etiketlerinden doğrula.
 
 ### Tekrarlı ölçümler (ön test, son test, izleme)
-- 3 ve üzeri ölçüm: `run_friedman` (Kendall's W etki büyüklüğü dahil).
+- Parametrik: `run_rm_anova`. Deney/kontrol + ön/son/izleme desende `group` ile karışık
+  desen kur; asıl soru zaman × grup etkileşimidir. Mauchly anlamlıysa Greenhouse-Geisser
+  satırını raporla; kısmi η² etki büyüklüğüdür.
+- Parametrik olmayan, 3 ve üzeri ölçüm: `run_friedman` (Kendall's W etki büyüklüğü dahil).
 - Friedman anlamlıysa ikili karşılaştırmalar `run_wilcoxon` ile yapılır. Bonferroni
   düzeltmesi uygula: α = ,05 / karşılaştırma sayısı (3 karşılaştırmada ,017).
   Düzeltilmiş eşiği raporda açıkça yaz.
@@ -96,7 +99,7 @@ SPSS'te açıp tezin ekine ya da kendi arşivine koyabileceğini hatırlat.
 
 ## Henüz desteklenmeyenler
 Şu analizler için araç yok: ölçek puanı hesaplama (COMPUTE), ters madde kodlama,
-iki yönlü/tekrarlı ölçümler ANOVA (GLM), regresyon, faktör analizi, güç analizi
+iki yönlü bağımsız ANOVA, regresyon, faktör analizi, güç analizi
 (G*Power SPSS dışında yapılır). Bunlar
 istenirse SPSS'te yapılacak adımları ve syntax'ı anlat, ama **sonuç üretme**;
 kullanıcı çıktıyı paylaşırsa birlikte yorumla.
