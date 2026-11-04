@@ -188,11 +188,20 @@ def describe_missing(mv):
     return {"raw": list(mv)}
 
 
-def variable_info(name):
+def variable_info(name, distinct=False):
     """Look up a variable in the active dataset (call after GET FILE)."""
     for i in range(spss.GetVariableCount()):
         if spss.GetVariableName(i).lower() == name.lower():
-            return {"index": i, "is_string": spss.GetVariableType(i) > 0}
+            info = {"index": i, "is_string": spss.GetVariableType(i) > 0}
+            if distinct:
+                cur = spss.Cursor([i])
+                try:
+                    vals = set(str(r[0]).strip() for r in cur.fetchall()
+                               if r[0] is not None and str(r[0]).strip())
+                finally:
+                    cur.close()
+                info["n_distinct"] = len(vals)
+            return info
     raise ValueError("Degisken bulunamadi: %s" % name)
 
 

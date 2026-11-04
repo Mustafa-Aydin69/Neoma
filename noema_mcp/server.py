@@ -22,7 +22,18 @@ WORKER = ROOT / "worker" / "spss_worker.py"
 LOG_DIR = Path(os.environ.get("NOEMA_LOG_DIR", Path.home() / "Noema" / "logs"))
 TIMEOUT = int(os.environ.get("NOEMA_TIMEOUT", "300"))
 
-mcp = FastMCP("noema-spss")
+INSTRUCTIONS = """Noema, yerel IBM SPSS Statistics motorunda analiz calistirir.
+Kurallar:
+- Tum istatistikler bu araclardan, yani SPSS'ten gelmeli. Hicbir testi Python ile
+  ya da elle hesaplama; bir arac hata verirse hatayi kullaniciya acikca bildir
+  ve SPSS'te nasil cozulecegini anlat, sonucu baska yoldan uretme.
+- path her zaman .sav dosyasinin TAM yoludur. Bilmiyorsan kullanicidan iste.
+- Analizden once inspect_dataset ile degisken adlarini, olcum duzeylerini ve
+  eksik deger tanimlarini kontrol et.
+- Her sonucta calisan syntax'i ve spss_menu yolunu kullaniciya goster.
+"""
+
+mcp = FastMCP("noema-spss", instructions=INSTRUCTIONS)
 
 
 def find_spss_python() -> str:
@@ -188,10 +199,11 @@ def run_mann_whitney(path: str, variables: list[str], group: str,
 
 @mcp.tool()
 def run_kruskal_wallis(path: str, variables: list[str], group: str,
-                       group_range: list[float]) -> dict:
+                       group_range: list[float] | None = None) -> dict:
     """Kruskal-Wallis H: normal dagilmayan veride tek yonlu ANOVA'nin alternatifi.
 
-    group_range: grup kodlarinin en kucugu ve en buyugu, or. [1, 4].
+    group_range: sayisal grup kodlarinin en kucugu ve en buyugu, or. [1, 4].
+    Metin tipindeki grup degiskenlerinde gerekmez (otomatik kodlanir).
     """
     return analysis("kruskal_wallis", path, variables=variables,
                     group=group, group_range=group_range)

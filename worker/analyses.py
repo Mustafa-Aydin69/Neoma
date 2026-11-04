@@ -92,13 +92,29 @@ def b_normality(req, info):
     return syntax
 
 
-def _two_groups(req, info):
+TMP_GROUP = "noema_grp"
+
+
+def _two_groups(req, info, numeric_only=False):
+    """Return (prelude, 'var(a b)'). String groups are recoded to 1/2 when
+    the procedure needs a numeric grouping variable. The recode lives only in
+    the working copy; the .sav file is never saved."""
     g = check_name(req.get("group"))
     vals = req.get("group_values") or []
     if len(vals) != 2:
         raise ValueError("group_values iki deger icermeli, or. [1, 2] veya ['f', 'm']")
     is_str = info(g)["is_string"]
-    return g, "%s(%s %s)" % (g, literal(vals[0], is_str), literal(vals[1], is_str))
+    if is_str and numeric_only:
+        prelude = ("RECODE %s (%s=1) (%s=2) (ELSE=SYSMIS) INTO %s.\n"
+                   "VALUE LABELS %s 1 %s 2 %s.\nEXECUTE." % (
+                       g, literal(vals[0], True), literal(vals[1], True), TMP_GROUP,
+                       TMP_GROUP, literal(vals[0], True), literal(vals[1], True)))
+        return prelude, "%s(1 2)" % TMP_GROUP
+    return "", "%s(%s %s)" % (g, literal(vals[0], is_str), literal(vals[1], is_str))
+
+
+def _autorecode(g):
+    return "AUTORECODE VARIABLES=%s /INTO %s /PRINT." % (g, TMP_GROUP)
 
 
 def b_ttest_independent(req, info):
@@ -129,15 +145,15 @@ def b_ttest_paired(req, info):
 def b_anova_oneway(req, info):
     dv = names(req.get("variables"))
     f = check_name(req.get("group"))
+    prelude = ""
     if info(f)["is_string"]:
-        raise ValueError("ONEWAY icin grup degiskeni sayisal olmali (%s metin). "
-                         "Once AUTORECODE ile sayisala cevirin." % f)
+        prelude, f = _autorecode(f) + "\n", TMP_GROUP
     posthoc = [p.upper() for p in (req.get("posthoc") or ["TUKEY", "GH"])]
     allowed = {"TUKEY", "GH", "BONFERRONI", "SCHEFFE", "LSD", "T2", "DUNNETT"}
     bad = [p for p in posthoc if p not in allowed]
     if bad:
         raise ValueError("Gecersiz post hoc: %s" % ", ".join(bad))
-    return ("ONEWAY %s BY %s\n  /ES=OVERALL\n  /STATISTICS DESCRIPTIVES HOMOGENEITY WELCH\n"
+    return prelude + ("ONEWAY %s BY %s\n  /ES=OVERALL\n  /STATISTICS DESCRIPTIVES HOMOGENEITY WELCH\n"
             "  /MISSING ANALYSIS\n  /CRITERIA=CILEVEL(0.95)\n  /POSTHOC=%s ALPHA(0.05)."
             % (" ".join(dv), f, " ".join(posthoc)))
 
@@ -164,19 +180,24 @@ def b_crosstabs(req, info):
 
 def b_mann_whitney(req, info):
     dv = names(req.get("variables"))
-    _, grp = _two_groups(req, info)
-    return "NPAR TESTS\n  /M-W= %s BY %s\n  /STATISTICS=DESCRIPTIVES QUARTILES\n  /MISSING ANALYSIS." % (" ".join(dv), grp)
+    prelude, grp = _two_groups(req, info, numeric_only=True)
+    return (prelude + "\n" if prelude else "") + (
+        "NPAR TESTS\n  /M-W= %s BY %s\n  /STATISTICS=DESCRIPTIVES QUARTILES\n  /MISSING ANALYSIS." % (" ".join(dv), grp))
 
 
 def b_kruskal_wallis(req, info):
     dv = names(req.get("variables"))
     g = check_name(req.get("group"))
+    prelude = ""
     if info(g)["is_string"]:
-        raise ValueError("Kruskal-Wallis icin grup degiskeni sayisal olmali.")
-    lo, hi = req.get("group_range") or [None, None]
+        # AUTORECODE gives codes 1..k in sorted order of the distinct values.
+        prelude, g = _autorecode(g) + "\n", TMP_GROUP
+        lo, hi = 1, info(check_name(req.get("group")), distinct=True)["n_distinct"]
+    else:
+        lo, hi = req.get("group_range") or [None, None]
     if lo is None or hi is None:
         raise ValueError("group_range gerekli, or. [1, 3]")
-    return ("NPAR TESTS\n  /K-W=%s BY %s(%s %s)\n  /STATISTICS=DESCRIPTIVES QUARTILES\n  /MISSING ANALYSIS."
+    return prelude + ("NPAR TESTS\n  /K-W=%s BY %s(%s %s)\n  /STATISTICS=DESCRIPTIVES QUARTILES\n  /MISSING ANALYSIS."
             % (" ".join(dv), g, literal(lo, False), literal(hi, False)))
 
 
