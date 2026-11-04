@@ -37,6 +37,10 @@ Kurallar:
 - Tum istatistikler bu araclardan, yani SPSS'ten gelmeli. Hicbir testi Python ile
   ya da elle hesaplama; bir arac hata verirse hatayi kullaniciya acikca bildir
   ve SPSS'te nasil cozulecegini anlat, sonucu baska yoldan uretme.
+- Istenen analiz icin arac yoksa (ya da gorunmuyorsa) bunu soyle ve DUR. Baska
+  bir aracin ciktisindan formulle turetme yapma (or. korelasyonlardan R^2 veya
+  beta hesaplamak yasak). Kullanici araci guncellemeyi unutmus olabilir:
+  "git pull yapip Claude'u yeniden baslatin" de.
 - path her zaman .sav dosyasinin TAM yoludur. Bilmiyorsan kullanicidan iste.
 - Analizden once inspect_dataset ile degisken adlarini, olcum duzeylerini ve
   eksik deger tanimlarini kontrol et.
