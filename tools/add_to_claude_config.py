@@ -30,14 +30,27 @@ def find_spss_python():
     return hits[-1] if hits else None
 
 
+CONFIG_NAME = "claude_desktop_config.json"
+
+
+def safe_config_path(path):
+    """Accept only a claude_desktop_config.json inside the user's home folder."""
+    home = os.path.realpath(os.path.expanduser("~"))
+    full = os.path.realpath(path)
+    if (os.path.basename(full) != CONFIG_NAME
+            or not os.path.normcase(full).startswith(os.path.normcase(home) + os.sep)):
+        sys.exit("Gecersiz config yolu: %s (kullanici klasorunuzdeki %s olmali)" % (path, CONFIG_NAME))
+    return Path(full)
+
+
 def main():
     if len(sys.argv) > 1:
-        cfg = Path(sys.argv[1])
+        cfg = safe_config_path(sys.argv[1])
     else:
         found = [Path(p) for p in candidates() if os.path.isfile(p)]
         if not found:
             sys.exit("Config bulunamadi. Yolunu arguman olarak verin (Edit config ile bulabilirsiniz).")
-        cfg = found[0]
+        cfg = safe_config_path(found[0])
 
     data = {}
     if cfg.exists() and cfg.read_text(encoding="utf-8").strip():

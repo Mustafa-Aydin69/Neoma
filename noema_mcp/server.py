@@ -175,27 +175,11 @@ WORKER_POOL = WarmWorker()
 atexit.register(WORKER_POOL.shutdown)
 
 
-def call_worker_oneshot(request: dict) -> dict:
-    with tempfile.TemporaryDirectory(prefix="noema_") as tmp:
-        req_path = Path(tmp) / "request.json"
-        resp_path = Path(tmp) / "response.json"
-        req_path.write_text(json.dumps(request, ensure_ascii=False), encoding="utf-8")
-        proc = subprocess.run(
-            [find_spss_python(), str(WORKER), str(req_path), str(resp_path)],
-            # stdin must NOT be inherited: it is the MCP stdio pipe.
-            stdin=subprocess.DEVNULL, capture_output=True, timeout=TIMEOUT,
-            creationflags=NO_WINDOW,
-        )
-        if not resp_path.exists():
-            return {"ok": False, "error": "Isci sureci yanit yazmadi.",
-                    "returncode": proc.returncode,
-                    "stderr": proc.stderr.decode("utf-8", "replace")[-4000:]}
-        return json.loads(resp_path.read_text(encoding="utf-8"))
-
-
 def call_worker(request: dict) -> dict:
     t0 = time.monotonic()
-    resp = WORKER_POOL.request(request) if PERSISTENT else call_worker_oneshot(request)
+    resp = WORKER_POOL.request(request)
+    if not PERSISTENT:  # NOEMA_PERSISTENT=0: a fresh SPSS engine for every call
+        WORKER_POOL.shutdown()
     resp["elapsed_seconds"] = round(time.monotonic() - t0, 2)
     log_run(request, resp)
     return resp
