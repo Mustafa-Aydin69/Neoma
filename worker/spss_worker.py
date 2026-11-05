@@ -404,6 +404,22 @@ def handle(req):
                 "traceback": traceback.format_exc()}
 
 
+def _safe_temp_path(path):
+    """Return path only if it lies inside a noema_* folder in the temp dir.
+
+    The MCP server creates these files with tempfile.mkdtemp(prefix="noema_"),
+    so anything else on the command line is rejected (path traversal guard).
+    """
+    base = os.path.normcase(os.path.realpath(tempfile.gettempdir()))
+    full = os.path.realpath(path)
+    parent = os.path.dirname(full)
+    if (os.path.normcase(os.path.dirname(parent)) != base
+            or not os.path.basename(parent).startswith("noema_")
+            or not os.path.normcase(full).startswith(base + os.sep)):
+        raise SystemExit("Gecersiz gecici dosya yolu: %s" % path)
+    return full
+
+
 def serve(port_file):
     """Keep the SPSS engine warm and answer requests over a localhost socket.
 
@@ -417,6 +433,7 @@ def serve(port_file):
     idle = float(os.environ.get("NOEMA_IDLE_SECONDS", "1800"))
     if not token:
         raise SystemExit("NOEMA_TOKEN gerekli")
+    port_file = _safe_temp_path(port_file)
     spss.Submit("SHOW N.")  # start the engine before announcing the port
     srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     srv.bind(("127.0.0.1", 0))
@@ -477,7 +494,8 @@ def main():
             serve(sys.argv[2])
         else:
             # One-shot mode: spss_worker.py request.json response.json
-            req_path, resp_path = sys.argv[1], sys.argv[2]
+            req_path = _safe_temp_path(sys.argv[1])
+            resp_path = _safe_temp_path(sys.argv[2])
             with open(req_path, encoding="utf-8") as f:
                 result = handle(json.load(f))
             with open(resp_path, "w", encoding="utf-8") as f:
