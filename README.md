@@ -99,4 +99,4 @@ Windows 11, bölge adını `Turkish_Türkiye.1254` olarak veriyor. SPSS 27 bu ad
 
 ## Grafikler
 
-`run_normality`, `run_regression`, `run_factor`, `run_rm_anova`, `run_anova_factorial`, `run_ancova` ve `run_manova` araçlarına `charts=True` verilirse SPSS grafikleri (boxplot, Q-Q, artık, scree, profil) resim olarak Claude'a gönderilir (çağrı başına en fazla 8). Grafikler log dosyasına yazılmaz.
+`run_normality`, `run_regression`, `run_factor`, `run_rm_anova`, `run_anova_factorial`, `run_ancova` ve `run_manova` araçlarına `charts=True` verilirse SPSS grafikleri (boxplot, Q-Q, artık, scree, profil) resim olarak Claude'a gönderilir (çağrı başına en fazla 16). Grafikler log dosyasına yazılmaz.

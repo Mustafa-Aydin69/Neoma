@@ -361,6 +361,7 @@ def b_ancova(req, info):
              "UNIANOVA %s BY %s WITH %s" % (dep, " ".join(used), " ".join(covs)),
              "  /METHOD=SSTYPE(3)",
              "  /INTERCEPT=INCLUDE",
+             "  /PRINT=ETASQ",
              "  /CRITERIA=ALPHA(.05)",
              "  /DESIGN=%s." % " ".join(slopes),
              "* Asil ANCOVA.",
@@ -379,6 +380,9 @@ def b_ancova(req, info):
     lines += ["  /PRINT=DESCRIPTIVE ETASQ HOMOGENEITY PARAMETER",
               "  /CRITERIA=ALPHA(.05)",
               "  /DESIGN=%s." % " ".join(covs + terms)]
+    # Scatter per group shows whether the slopes are parallel.
+    lines += ["* Gruplara gore sacilim (egimler paralel mi).",
+              "GRAPH /SCATTERPLOT(BIVAR)=%s WITH %s BY %s." % (covs[0], dep, used[0])]
     return prelude + "\n".join(lines)
 
 

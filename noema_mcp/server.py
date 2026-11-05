@@ -313,7 +313,7 @@ def run_normality(path: str, variables: list[str], group: str | None = None,
     """Normallik testi (EXAMINE): Kolmogorov-Smirnov ve Shapiro-Wilk, carpiklik/basiklik.
 
     group verilirse her grup icin ayri test yapilir (t-testi/ANOVA oncesi bu kullanilmali).
-    charts=True: grafikleri (boxplot, normal Q-Q) resim olarak da dondurur (en fazla 8).
+    charts=True: grafikleri (boxplot, normal Q-Q) resim olarak da dondurur (en fazla 16).
     """
     return analysis("normality", path, charts=charts, filter_variable=filter_variable, filter_value=filter_value, variables=variables, group=group)
 
@@ -379,7 +379,7 @@ def run_regression(path: str, dependent: str, blocks: list[list[str]],
     Cikti: model ozeti (R, R^2, duzeltilmis R^2, R^2 degisimi, Durbin-Watson),
     ANOVA, katsayilar (B, beta, t, p, %95 GA, kismi/yari kismi r, tolerans, VIF),
     artik istatistikleri.
-    charts=True: grafikleri (artik-tahmin sacilimi, normal P-P) resim olarak da dondurur (en fazla 8).
+    charts=True: grafikleri (artik-tahmin sacilimi, normal P-P) resim olarak da dondurur (en fazla 16).
     """
     return analysis("regression", path, charts=charts, filter_variable=filter_variable, filter_value=filter_value,
                     dependent=dependent, blocks=blocks, method=method)
@@ -399,7 +399,7 @@ def run_anova_factorial(path: str, dependent: str, factors: list[str],
     oku ve atlandiysa soyle), etkilesim icin Bonferroni'li basit etkiler.
     Once etkilesime bak. Bos hucre (bir grup kombinasyonunda hic kisi yok) varsa
     etkilesim sd'si duser; bunu kullaniciya soyle.
-    charts=True: grafikleri (profil grafigi) resim olarak da dondurur (en fazla 8).
+    charts=True: grafikleri (profil grafigi) resim olarak da dondurur (en fazla 16).
     """
     return analysis("anova_factorial", path, charts=charts, filter_variable=filter_variable, filter_value=filter_value,
                     dependent=dependent, factors=factors)
@@ -420,7 +420,9 @@ def run_ancova(path: str, dependent: str, factors: list[str], covariates: list[s
     etkileri (kismi eta kare), duzeltilmis ortalamalar (Estimated Marginal Means,
     kovaryat ortalamasinda) ve Bonferroni'li ikili karsilastirmalar.
     Raporda ham ortalamalari degil duzeltilmis ortalamalari kullan.
-    charts=True: profil grafigini (duzeltilmis ortalamalar) resim olarak da dondurur.
+    Ilk kovaryat icin gruplara gore sacilim grafigi de cizilir (egimler paralel mi).
+    charts=True: profil grafigi (duzeltilmis ortalamalar) ve sacilim grafigini resim
+    olarak da dondurur.
     """
     return analysis("ancova", path, charts=charts, filter_variable=filter_variable, filter_value=filter_value,
                     dependent=dependent, factors=factors, covariates=covariates)
@@ -442,7 +444,7 @@ def run_manova(path: str, dependents: list[str], factors: list[str],
     (tek degiskenli izleme testleri; Bonferroni: ,05 / bagimli sayisi), post hoc
     (kovaryat yoksa Tukey/Games-Howell) ve Bonferroni'li ikili karsilastirmalar.
     Once cok degiskenli testa bak; anlamli degilse tek degiskenli testleri yorumlama.
-    charts=True: profil grafiklerini resim olarak da dondurur (en fazla 8).
+    charts=True: profil grafiklerini resim olarak da dondurur (en fazla 16).
     """
     return analysis("manova", path, charts=charts, filter_variable=filter_variable, filter_value=filter_value,
                     dependents=dependents, factors=factors, covariates=covariates)
@@ -485,7 +487,7 @@ def run_factor(path: str, variables: list[str], extraction: str = "pc",
     Cikti: KMO ve Bartlett, ortak varyanslar, aciklanan varyans, dondurulmus
     yuk matrisi (,30 alti gizli). Scree grafigi doner gelmez; kullaniciya
     SPSS'te bakmasini soyle.
-    charts=True: grafikleri (scree) resim olarak da dondurur (en fazla 8).
+    charts=True: grafikleri (scree) resim olarak da dondurur (en fazla 16).
     """
     return analysis("factor", path, charts=charts, filter_variable=filter_variable, filter_value=filter_value,
                     variables=variables, extraction=extraction, rotation=rotation,
@@ -561,7 +563,7 @@ def run_rm_anova(path: str, variables: list[str], group: str | None = None,
     Levene, kismi eta-kare, Bonferroni'li ikili karsilastirmalar ve basit etkiler dahil.
     Kuresellik bozuksa Greenhouse-Geisser satiri raporlanmalidir.
     Advanced Statistics modulu gerekir.
-    charts=True: grafikleri (profil grafigi) resim olarak da dondurur (en fazla 8).
+    charts=True: grafikleri (profil grafigi) resim olarak da dondurur (en fazla 16).
     """
     return analysis("rm_anova", path, charts=charts, filter_variable=filter_variable, filter_value=filter_value,
                     variables=variables, group=group, factor_name=factor_name)

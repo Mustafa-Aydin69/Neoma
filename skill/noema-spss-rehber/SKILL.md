@@ -88,7 +88,7 @@ Türkçe, sade ve sıcak bir dille konuş; terimleri ilk geçtiği yerde kısaca
 - **Uç değerler:** `run_normality` çıktısındaki Extreme Values tablosuna bak.
 - **Grafikler:** `run_normality`, `run_regression`, `run_factor`, `run_rm_anova` ve
   `run_anova_factorial`, `run_ancova`, `run_manova` `charts=True` ile boxplot, Q-Q, artık, scree ve profil
-  grafiklerini resim olarak döndürür (en fazla 8). Grafiğe bakarak yorum yaptığında
+  grafiklerini resim olarak döndürür (en fazla 16). Grafiğe bakarak yorum yaptığında
   bunu söyle; grafik gelmediyse (`charts_sent` yok ya da 0) gördüğünü iddia etme.
 - Varsayım bozulursa parametrik olmayan karşılığa geç ve nedenini açıkla.
 - **Küçük örneklem (grup başına n < 30):** Parametrik olmayan testlerde `exact=True`
@@ -135,7 +135,10 @@ silmez (SPSS'teki "Filter out unselected cases" gibi çalışır).
   "faktör * kovaryat" satırı anlamsız olmalı; anlamlıysa varsayım bozulmuştur, söyle ve
   alternatif olarak karışık desen ANOVA'yı (`run_rm_anova`) öner. Kovaryat ile bağımlı
   arasında doğrusal ilişki olmalı (`run_correlation`). Raporda ham değil düzeltilmiş
-  ortalamaları (Estimated Marginal Means) ver. Küçük örneklemde (grup başına n < 15 gibi)
+  ortalamaları (Estimated Marginal Means) ver. Gruplar kovaryatta çok farklıysa (ör.
+  kovaryat ortalaması bir grubun aralığının dışında) düzeltilmiş ortalama o grup için
+  ekstrapolasyondur; ANCOVA bu farkı "eşitleyemez" (Miller & Chapman, 2001), söyle.
+  Saçılım grafiği (`charts=True`) eğimlerin paralel olup olmadığını gösterir. Küçük örneklemde (grup başına n < 15 gibi)
   güç düşüktür; bunu sınırlılık olarak belirt.
 - `run_manova`: kavramsal olarak ilişkili 2+ bağımlı değişken (ör. bir ölçeğin alt
   boyutları). Box's M p < ,001 ise ya da gruplar dengesizse Pillai izini, değilse Wilks'

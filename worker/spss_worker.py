@@ -101,7 +101,7 @@ def open_dataset(path):
     return "GET FILE=%s.\nDATASET NAME noema WINDOW=FRONT." % q(spss_path(path))
 
 
-MAX_CHARTS = 8
+MAX_CHARTS = 16
 
 
 def run_syntax_capture(syntax, charts=False):
