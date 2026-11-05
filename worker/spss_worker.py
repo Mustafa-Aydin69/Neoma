@@ -143,7 +143,7 @@ def run_syntax_capture(syntax, charts=False):
         tables = parse_oxml(xml_path)
         if charts:
             import re
-            files, seen, stray = [], set(), []
+            files, seen, stray, embedded = [], set(), [], []
             for root, _, names in os.walk(chart_dir):
                 for n in names:
                     if n.lower().endswith(".png"):
@@ -157,7 +157,15 @@ def run_syntax_capture(syntax, charts=False):
                 with open(html, "rb") as f:
                     text = f.read().decode("utf-8", "replace")
                 srcs = re.findall(r'src="([^"]+)"', text, flags=re.I)
+                # SPSS 27 embeds the charts in the HTML as data URIs.
+                for i, src in enumerate(srcs):
+                    m = re.match(r"data:image/png;base64,(.*)$", src.strip(), flags=re.I | re.S)
+                    if m:
+                        embedded.append({"name": "chart%02d.png" % (i + 1),
+                                         "png_base64": re.sub(r"\s+", "", m.group(1))})
                 for src in srcs:
+                    if src.startswith("data:"):
+                        continue
                     full = src if os.path.isabs(src) else os.path.join(chart_dir, src)
                     key = os.path.normcase(os.path.abspath(full))
                     if full.lower().endswith(".png") and os.path.isfile(full) and key not in seen:
@@ -176,24 +184,26 @@ def run_syntax_capture(syntax, charts=False):
                         seen.add(key)
                         files.append((os.path.getmtime(full), n, full))
                         stray.append(full)
-            if not files:
+            if not files and not embedded:
                 listing = []
                 for root, _, names in os.walk(chart_dir):
                     listing += [os.path.relpath(os.path.join(root, n), chart_dir) for n in names]
                 images.append({"name": "_debug", "text": json.dumps({
                     "files": listing,
                     "html_size": os.path.getsize(html) if os.path.isfile(html) else None,
-                    "img_src": srcs[:10],
+                    "img_src": [x[:80] for x in srcs[:10]],
                     "cwd": os.getcwd(),
                     "chart_oms_error": chart_error,
                     "last_error": _last_error()}, ensure_ascii=False)})
-            for _, n, full in sorted(files)[:MAX_CHARTS]:
+            found = list(embedded)
+            for _, n, full in sorted(files):
                 with open(full, "rb") as f:
-                    images.append({"name": n,
-                                   "png_base64": base64.b64encode(f.read()).decode("ascii")})
-            if len(files) > MAX_CHARTS:
+                    found.append({"name": n,
+                                  "png_base64": base64.b64encode(f.read()).decode("ascii")})
+            images.extend(found[:MAX_CHARTS])
+            if len(found) > MAX_CHARTS:
                 images.append({"name": "_note", "text": "%d grafikten ilk %d tanesi gonderildi"
-                               % (len(files), MAX_CHARTS)})
+                               % (len(found), MAX_CHARTS)})
             for f in stray:  # PNGs SPSS left outside chart_dir
                 try:
                     os.remove(f)
