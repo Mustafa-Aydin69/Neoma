@@ -117,23 +117,33 @@ def run_syntax_capture(syntax, charts=False):
     fd, xml_path = tempfile.mkstemp(suffix=".xml", prefix="noema_")
     os.close(fd)
     chart_dir = tempfile.mkdtemp(prefix="noema_charts_") if charts else None
-    lines = ["SET OLANG=ENGLISH.",
-             "OMS /SELECT TABLES WARNINGS /DESTINATION FORMAT=OXML OUTFILE=%s /TAG='noema'." % q(xml_path)]
-    if charts:
-        # IMAGEROOT gets a full path so the PNGs land in chart_dir whatever
-        # SPSS's working directory is.
-        lines.append("OMS /SELECT CHARTS /DESTINATION FORMAT=HTML OUTFILE=%s "
-                     "IMAGES=YES IMAGEFORMAT=PNG CHARTSIZE=70 IMAGEROOT=%s /TAG='noema_ch'."
-                     % (q(os.path.join(chart_dir, "charts.htm")), q(os.path.join(chart_dir, "noema"))))
-    lines.append(syntax)
-    lines.append("OMSEND TAG=['noema'%s]." % (" 'noema_ch'" if charts else ""))
+    import time as _time
+    t_start = _time.time()
+    chart_error = None
     images = []
     try:
-        spss.Submit("\n".join(lines))
+        spss.Submit("SET OLANG=ENGLISH.\n"
+                    "OMS /SELECT TABLES WARNINGS /DESTINATION FORMAT=OXML OUTFILE=%s /TAG='noema'."
+                    % q(xml_path))
+        chart_oms = False
+        if charts:
+            # Separate Submit: if SPSS rejects the chart destination, the
+            # analysis still runs and we report why there are no charts.
+            try:
+                spss.Submit("OMS /SELECT CHARTS /DESTINATION FORMAT=HTML OUTFILE=%s "
+                            "IMAGES=YES IMAGEFORMAT=PNG CHARTSIZE=70 IMAGEROOT='noema' "
+                            "/TAG='noema_ch'." % q(os.path.join(chart_dir, "charts.htm")))
+                chart_oms = True
+            except Exception as e:  # noqa: BLE001
+                chart_error = "%s %s" % (e, _last_error())
+        try:
+            spss.Submit(syntax)
+        finally:
+            spss.Submit("OMSEND TAG=['noema'%s]." % (" 'noema_ch'" if chart_oms else ""))
         tables = parse_oxml(xml_path)
         if charts:
             import re
-            files, seen = [], set()
+            files, seen, stray = [], set(), []
             for root, _, names in os.walk(chart_dir):
                 for n in names:
                     if n.lower().endswith(".png"):
@@ -153,6 +163,19 @@ def run_syntax_capture(syntax, charts=False):
                     if full.lower().endswith(".png") and os.path.isfile(full) and key not in seen:
                         seen.add(key)
                         files.append((os.path.getmtime(full), os.path.basename(full), full))
+            for d in {os.getcwd(), tempfile.gettempdir()}:
+                try:
+                    names = os.listdir(d)
+                except OSError:
+                    continue
+                for n in names:
+                    full = os.path.join(d, n)
+                    key = os.path.normcase(os.path.abspath(full))
+                    if (n.lower().startswith("noema") and n.lower().endswith(".png")
+                            and key not in seen and os.path.getmtime(full) >= t_start - 1):
+                        seen.add(key)
+                        files.append((os.path.getmtime(full), n, full))
+                        stray.append(full)
             if not files:
                 listing = []
                 for root, _, names in os.walk(chart_dir):
@@ -162,6 +185,7 @@ def run_syntax_capture(syntax, charts=False):
                     "html_size": os.path.getsize(html) if os.path.isfile(html) else None,
                     "img_src": srcs[:10],
                     "cwd": os.getcwd(),
+                    "chart_oms_error": chart_error,
                     "last_error": _last_error()}, ensure_ascii=False)})
             for _, n, full in sorted(files)[:MAX_CHARTS]:
                 with open(full, "rb") as f:
@@ -170,6 +194,11 @@ def run_syntax_capture(syntax, charts=False):
             if len(files) > MAX_CHARTS:
                 images.append({"name": "_note", "text": "%d grafikten ilk %d tanesi gonderildi"
                                % (len(files), MAX_CHARTS)})
+            for f in stray:  # PNGs SPSS left outside chart_dir
+                try:
+                    os.remove(f)
+                except OSError:
+                    pass
     finally:
         try:
             os.remove(xml_path)
