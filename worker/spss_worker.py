@@ -493,13 +493,7 @@ def main():
         if len(sys.argv) >= 3 and sys.argv[1] == "--serve":
             serve(sys.argv[2])
         else:
-            # One-shot mode: spss_worker.py request.json response.json
-            req_path = _safe_temp_path(sys.argv[1])
-            resp_path = _safe_temp_path(sys.argv[2])
-            with open(req_path, encoding="utf-8") as f:
-                result = handle(json.load(f))
-            with open(resp_path, "w", encoding="utf-8") as f:
-                json.dump(result, f, ensure_ascii=False)
+            raise SystemExit("Kullanim: spss_worker.py --serve PORT_DOSYASI | --test [dosya.sav]")
     finally:
         try:
             spss.StopSPSS()
