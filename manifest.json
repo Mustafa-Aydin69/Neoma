@@ -1,0 +1,67 @@
+{
+  "manifest_version": "0.4",
+  "name": "noema-spss",
+  "display_name": "Noema SPSS",
+  "version": "0.5.0",
+  "description": "Claude'un bilgisayarınızdaki IBM SPSS Statistics ile analiz yapmasını sağlar.",
+  "long_description": "Noema, Claude Desktop'u yerel IBM SPSS Statistics kurulumuna bağlar. Betimsel istatistik, normallik, t-testleri, ANOVA, ANCOVA, MANOVA, korelasyon, regresyon, lojistik regresyon, faktör analizi, güvenirlik ve parametrik olmayan testleri SPSS'in kendisinde çalıştırır; her sonuçla birlikte syntax ve menü yolunu verir. .sav dosyası hiçbir zaman kaydedilmez. SPSS Statistics (Python Essentials dahil) kurulu olmalıdır.",
+  "author": {
+    "name": "Mustafa Aydin",
+    "url": "https://github.com/Mustafa-Aydin69/Neoma"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Mustafa-Aydin69/Neoma"
+  },
+  "server": {
+    "type": "uv",
+    "entry_point": "noema_mcp/server.py",
+    "mcp_config": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "${__dirname}",
+        "noema_mcp/server.py"
+      ],
+      "env": {
+        "NOEMA_SPSS_PYTHON": "${user_config.spss_python}",
+        "NOEMA_IDLE_MINUTES": "${user_config.idle_minutes}"
+      }
+    }
+  },
+  "user_config": {
+    "spss_python": {
+      "type": "file",
+      "title": "SPSS Python (isteğe bağlı)",
+      "description": "Boş bırakın; SPSS otomatik bulunur. Bulunamazsa SPSS klasöründeki Python3\\python.exe dosyasını seçin (ör. C:\\Program Files\\IBM\\SPSS\\Statistics\\27\\Python3\\python.exe).",
+      "required": false
+    },
+    "idle_minutes": {
+      "type": "number",
+      "title": "SPSS'i açık tutma süresi (dakika)",
+      "description": "Son analizden sonra SPSS motoru bu kadar dakika hazır bekler; sonraki analizler hızlı başlar.",
+      "default": 30,
+      "min": 1,
+      "max": 240,
+      "required": false
+    }
+  },
+  "tools_generated": true,
+  "compatibility": {
+    "platforms": [
+      "win32",
+      "darwin"
+    ],
+    "runtimes": {
+      "python": ">=3.10"
+    }
+  },
+  "keywords": [
+    "spss",
+    "statistics",
+    "istatistik",
+    "tez",
+    "thesis"
+  ]
+}

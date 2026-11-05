@@ -1,0 +1,8 @@
+[project]
+name = "noema-spss"
+version = "0.5.0"
+description = "Claude Desktop ile yerel IBM SPSS Statistics arasinda MCP koprusu"
+requires-python = ">=3.10"
+dependencies = [
+    "mcp>=1.2,<2",
+]

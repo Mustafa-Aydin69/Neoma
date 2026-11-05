@@ -7,3 +7,5 @@ __pycache__/
 logs/
 add_config.py
 .mcp.json
+dist/
+*.mcpb

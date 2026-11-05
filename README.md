@@ -50,7 +50,18 @@ Her çalıştırma `~/Noema/logs/runs.jsonl` dosyasına (istek ve sonuç), kulla
 ## Bilinen sorun: Türkçe Windows bölge ayarı
 Windows 11, bölge adını `Turkish_Türkiye.1254` olarak veriyor. SPSS 27 bu adı UTF-8 sanıp okuyor ve `ü` harfinde çöküyor. İşçi süreç `spss` modülünü yüklemeden önce bölge ayarını sabitliyor ve SPSS'in hatalı fonksiyonunu sarmalıyor. Bu yüzden kullanıcının Windows ayarına dokunması gerekmiyor.
 
-## Kurulum (Windows)
+## Kolay kurulum (.mcpb paketi)
+Python ya da git gerekmez; Claude Desktop gerekenleri (uv ile Python ve `mcp`) kendisi kurar.
+1. `noema-spss.mcpb` dosyasını indirin.
+2. Claude Desktop'ta **Settings > Extensions** sayfasına sürükleyip bırakın (ya da dosyaya çift tıklayın) ve **Install** deyin.
+3. SPSS otomatik bulunur. Bulunamazsa eklentinin **Configure** ekranında SPSS klasöründeki `Python3\python.exe` dosyasını seçin.
+4. Yeni bir sohbette "check_spss çalıştır" deyin.
+
+Elle kurulumdan (aşağıda) geçiyorsanız `claude_desktop_config.json` içindeki `noema-spss` girdisini silin; yoksa araçlar iki kez görünür.
+
+Paketi yeniden üretmek için: `npx @anthropic-ai/mcpb pack . dist/noema-spss.mcpb` (repo kökünde; `.mcpbignore` skill, tools ve veri dosyalarını dışarıda bırakır).
+
+## Kurulum (Windows, elle / geliştirici)
 1. Repoyu klonlayın: `git clone https://github.com/Mustafa-Aydin69/Neoma.git C:\noema`
 2. **Python 3.10 veya üstü** gerekiyor (3.13 ve 3.14 ile denendi). SPSS'in kendi Python'u bu iş için kullanılmamalı.
 3. Komut İstemi'nde:

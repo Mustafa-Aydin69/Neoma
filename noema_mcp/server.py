@@ -41,7 +41,7 @@ Kurallar:
 - Istenen analiz icin arac yoksa (ya da gorunmuyorsa) bunu soyle ve DUR. Baska
   bir aracin ciktisindan formulle turetme yapma (or. korelasyonlardan R^2 veya
   beta hesaplamak yasak). Kullanici araci guncellemeyi unutmus olabilir:
-  "git pull yapip Claude'u yeniden baslatin" de.
+  "git pull yapip (ya da yeni .mcpb paketini kurup) Claude'u yeniden baslatin" de.
 - path her zaman .sav dosyasinin TAM yoludur. Bilmiyorsan kullanicidan iste.
 - Analizden once inspect_dataset ile degisken adlarini, olcum duzeylerini ve
   eksik deger tanimlarini kontrol et.
@@ -53,8 +53,9 @@ mcp = FastMCP("noema-spss", instructions=INSTRUCTIONS)
 
 def find_spss_python() -> str:
     """NOEMA_SPSS_PYTHON wins; otherwise look in the usual install folders."""
-    env = os.environ.get("NOEMA_SPSS_PYTHON")
-    if env:
+    env = (os.environ.get("NOEMA_SPSS_PYTHON") or "").strip().strip('"')
+    # The .mcpb installer may pass an empty or unresolved "${user_config...}" value.
+    if env and not env.startswith("${") and os.path.isfile(env):
         return env
     if platform.system() == "Windows":
         patterns = [r"C:\Program Files\IBM\SPSS\Statistics\*\Python3\python.exe",
@@ -64,8 +65,9 @@ def find_spss_python() -> str:
                     "/Applications/IBM SPSS Statistics*/*/Python3/bin/python3*"]
     hits = sorted(h for p in patterns for h in glob.glob(p))
     if not hits:
-        raise RuntimeError("SPSS Python bulunamadi. NOEMA_SPSS_PYTHON ortam "
-                           "degiskenine SPSS'in python.exe yolunu yazin.")
+        raise RuntimeError("SPSS Python bulunamadi. Claude Desktop > Settings > Extensions > "
+                           "Noema SPSS > Configure ile SPSS klasorundeki Python3\\python.exe "
+                           "dosyasini secin (elle kurulumda NOEMA_SPSS_PYTHON ortam degiskeni).")
     return hits[-1]  # newest version
 
 

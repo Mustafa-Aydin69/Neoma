@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.pyc
+.git/
+.gitignore
+*.sav
+*.zsav
+*.spv
+logs/
+dist/
+skill/
+tools/
+.mcp.json
+add_config.py
+*.mcpb
