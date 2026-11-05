@@ -249,19 +249,22 @@ def with_charts(resp: dict):
     Claude can look at boxplots, Q-Q plots, residual and scree plots."""
     result = resp.get("result") if isinstance(resp.get("result"), dict) else None
     charts = result.pop("charts", None) if result else None
-    if not charts:
+    if charts is None:
         return resp
     images, notes = [], []
     for c in charts:
         if c.get("png_base64"):
             images.append(ImageContent(type="image", data=c["png_base64"], mimeType="image/png"))
+        elif c.get("name") == "_debug":
+            result["charts_debug"] = c.get("text")
         elif c.get("text"):
             notes.append(c["text"])
     result["charts_sent"] = len(images)
     if notes:
         result["charts_note"] = "; ".join(notes)
     if not images:
-        result["charts_note"] = result.get("charts_note") or "SPSS bu analiz icin grafik uretmedi"
+        result["charts_note"] = (result.get("charts_note") or
+                                 "Grafik dosyasi bulunamadi; charts_debug alanini kullaniciya aynen goster")
         return resp
     text = TextContent(type="text", text=json.dumps(resp, ensure_ascii=False))
     return CallToolResult(content=[text, *images], structuredContent=resp)

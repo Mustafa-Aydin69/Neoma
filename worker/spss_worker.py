@@ -120,9 +120,11 @@ def run_syntax_capture(syntax, charts=False):
     lines = ["SET OLANG=ENGLISH.",
              "OMS /SELECT TABLES WARNINGS /DESTINATION FORMAT=OXML OUTFILE=%s /TAG='noema'." % q(xml_path)]
     if charts:
+        # IMAGEROOT gets a full path so the PNGs land in chart_dir whatever
+        # SPSS's working directory is.
         lines.append("OMS /SELECT CHARTS /DESTINATION FORMAT=HTML OUTFILE=%s "
-                     "IMAGES=YES IMAGEFORMAT=PNG CHARTSIZE=70 IMAGEROOT='noema' /TAG='noema_ch'."
-                     % q(os.path.join(chart_dir, "charts.htm")))
+                     "IMAGES=YES IMAGEFORMAT=PNG CHARTSIZE=70 IMAGEROOT=%s /TAG='noema_ch'."
+                     % (q(os.path.join(chart_dir, "charts.htm")), q(os.path.join(chart_dir, "noema"))))
     lines.append(syntax)
     lines.append("OMSEND TAG=['noema'%s]." % (" 'noema_ch'" if charts else ""))
     images = []
@@ -130,12 +132,37 @@ def run_syntax_capture(syntax, charts=False):
         spss.Submit("\n".join(lines))
         tables = parse_oxml(xml_path)
         if charts:
-            files = []
+            import re
+            files, seen = [], set()
             for root, _, names in os.walk(chart_dir):
                 for n in names:
                     if n.lower().endswith(".png"):
                         full = os.path.join(root, n)
+                        seen.add(os.path.normcase(os.path.abspath(full)))
                         files.append((os.path.getmtime(full), n, full))
+            # Also follow <img src> in the HTML, in case SPSS wrote elsewhere.
+            html = os.path.join(chart_dir, "charts.htm")
+            srcs = []
+            if os.path.isfile(html):
+                with open(html, "rb") as f:
+                    text = f.read().decode("utf-8", "replace")
+                srcs = re.findall(r'src="([^"]+)"', text, flags=re.I)
+                for src in srcs:
+                    full = src if os.path.isabs(src) else os.path.join(chart_dir, src)
+                    key = os.path.normcase(os.path.abspath(full))
+                    if full.lower().endswith(".png") and os.path.isfile(full) and key not in seen:
+                        seen.add(key)
+                        files.append((os.path.getmtime(full), os.path.basename(full), full))
+            if not files:
+                listing = []
+                for root, _, names in os.walk(chart_dir):
+                    listing += [os.path.relpath(os.path.join(root, n), chart_dir) for n in names]
+                images.append({"name": "_debug", "text": json.dumps({
+                    "files": listing,
+                    "html_size": os.path.getsize(html) if os.path.isfile(html) else None,
+                    "img_src": srcs[:10],
+                    "cwd": os.getcwd(),
+                    "last_error": _last_error()}, ensure_ascii=False)})
             for _, n, full in sorted(files)[:MAX_CHARTS]:
                 with open(full, "rb") as f:
                     images.append({"name": n,
