@@ -254,7 +254,8 @@ def with_charts(resp: dict):
     images, notes = [], []
     for c in charts:
         if c.get("png_base64"):
-            images.append(ImageContent(type="image", data=c["png_base64"], mimeType="image/png"))
+            images.append(ImageContent(type="image", data=c["png_base64"],
+                                       mimeType=c.get("mime") or "image/png"))
         elif c.get("name") == "_debug":
             result["charts_debug"] = c.get("text")
         elif c.get("text"):

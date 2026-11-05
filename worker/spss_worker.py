@@ -159,10 +159,13 @@ def run_syntax_capture(syntax, charts=False):
                 srcs = re.findall(r'src="([^"]+)"', text, flags=re.I)
                 # SPSS 27 embeds the charts in the HTML as data URIs.
                 for i, src in enumerate(srcs):
-                    m = re.match(r"data:image/png;base64,(.*)$", src.strip(), flags=re.I | re.S)
+                    # SPSS 27 writes JPEG here even with IMAGEFORMAT=PNG.
+                    m = re.match(r"data:image/([a-z]+);base64,(.*)$", src.strip(), flags=re.I | re.S)
                     if m:
-                        embedded.append({"name": "chart%02d.png" % (i + 1),
-                                         "png_base64": re.sub(r"\s+", "", m.group(1))})
+                        kind = m.group(1).lower()
+                        mime = {"jpg": "image/jpeg", "jpeg": "image/jpeg"}.get(kind, "image/" + kind)
+                        embedded.append({"name": "chart%02d.%s" % (i + 1, kind), "mime": mime,
+                                         "png_base64": re.sub(r"\s+", "", m.group(2))})
                 for src in srcs:
                     if src.startswith("data:"):
                         continue
