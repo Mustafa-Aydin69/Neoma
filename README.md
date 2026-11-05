@@ -7,6 +7,7 @@
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20(deneysel)-lightgrey)
 ![Python](https://img.shields.io/badge/python-3.10%2B-3776AB)
 ![Durum](https://img.shields.io/badge/durum-prototip-orange)
+![Lisans](https://img.shields.io/badge/lisans-MIT-green)
 
 Noema, yüksek lisans öğrencilerinin tez analizlerini kendi bilgisayarlarındaki IBM SPSS Statistics üzerinde yapmalarına **ve anlamalarına** yardım eder. Claude Desktop, analizi SPSS motorunda çalıştırır, gerçek SPSS çıktısını okur, sonucu sade Türkçeyle açıklar ve aynı işlemin SPSS'te nasıl yapılacağını (syntax ve menü yolu) gösterir.
 
@@ -32,6 +33,7 @@ Noema, yüksek lisans öğrencilerinin tez analizlerini kendi bilgisayarlarında
 - [Geliştirme](#geliştirme)
 - [Proje yapısı](#proje-yapısı)
 - [Durum ve yol haritası](#durum-ve-yol-haritası)
+- [Lisans](#lisans)
 
 ---
 
@@ -310,6 +312,10 @@ Sırada:
 - [ ] `.mcpb` paketinin farklı bilgisayarlarda denenmesi
 - [ ] macOS desteği (SPSS Python yolları şimdilik tahmine dayalı)
 - [ ] Diğer SPSS sürümleriyle uyumluluk testi
+
+## Lisans
+
+Noema [MIT Lisansı](LICENSE) ile dağıtılır.
 
 ---
 

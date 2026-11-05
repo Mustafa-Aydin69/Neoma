@@ -13,6 +13,7 @@
     "type": "git",
     "url": "https://github.com/Mustafa-Aydin69/Neoma"
   },
+  "license": "MIT",
   "server": {
     "type": "uv",
     "entry_point": "noema_mcp/server.py",
