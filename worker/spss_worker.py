@@ -101,25 +101,56 @@ def open_dataset(path):
     return "GET FILE=%s.\nDATASET NAME noema WINDOW=FRONT." % q(spss_path(path))
 
 
-def run_syntax_capture(syntax):
-    """Run syntax with OMS capturing every table as OXML; return (syntax, tables)."""
+MAX_CHARTS = 8
+
+
+def run_syntax_capture(syntax, charts=False):
+    """Run syntax with OMS capturing every table as OXML.
+
+    With charts=True a second OMS writes every chart as PNG (via an HTML
+    destination, which puts the images next to the HTML file). Returns
+    (syntax, tables, charts) where charts is a list of
+    {"name": ..., "png_base64": ...}, at most MAX_CHARTS.
+    """
+    import base64
+    import shutil
     fd, xml_path = tempfile.mkstemp(suffix=".xml", prefix="noema_")
     os.close(fd)
-    full = "\n".join([
-        "SET OLANG=ENGLISH.",
-        "OMS /SELECT TABLES WARNINGS /DESTINATION FORMAT=OXML OUTFILE=%s /TAG='noema'." % q(xml_path),
-        syntax,
-        "OMSEND TAG=['noema'].",
-    ])
+    chart_dir = tempfile.mkdtemp(prefix="noema_charts_") if charts else None
+    lines = ["SET OLANG=ENGLISH.",
+             "OMS /SELECT TABLES WARNINGS /DESTINATION FORMAT=OXML OUTFILE=%s /TAG='noema'." % q(xml_path)]
+    if charts:
+        lines.append("OMS /SELECT CHARTS /DESTINATION FORMAT=HTML OUTFILE=%s "
+                     "IMAGES=YES IMAGEFORMAT=PNG CHARTSIZE=70 IMAGEROOT='noema' /TAG='noema_ch'."
+                     % q(os.path.join(chart_dir, "charts.htm")))
+    lines.append(syntax)
+    lines.append("OMSEND TAG=['noema'%s]." % (" 'noema_ch'" if charts else ""))
+    images = []
     try:
-        spss.Submit(full)
+        spss.Submit("\n".join(lines))
         tables = parse_oxml(xml_path)
+        if charts:
+            files = []
+            for root, _, names in os.walk(chart_dir):
+                for n in names:
+                    if n.lower().endswith(".png"):
+                        full = os.path.join(root, n)
+                        files.append((os.path.getmtime(full), n, full))
+            for _, n, full in sorted(files)[:MAX_CHARTS]:
+                with open(full, "rb") as f:
+                    images.append({"name": n,
+                                   "png_base64": base64.b64encode(f.read()).decode("ascii")})
+            if len(files) > MAX_CHARTS:
+                images.append({"name": "_note", "text": "%d grafikten ilk %d tanesi gonderildi"
+                               % (len(files), MAX_CHARTS)})
     finally:
         try:
             os.remove(xml_path)
         except OSError:
             pass
-    return syntax, tables
+        if chart_dir:
+            shutil.rmtree(chart_dir, ignore_errors=True)
+    return syntax, tables, images
 
 
 def _label(el):
@@ -259,7 +290,7 @@ def action_analysis(req):
     for pair in req.get("pairs") or []:
         for v in pair:
             variable_info(v)
-    syntax, tables = run_syntax_capture(syntax)
+    syntax, tables, charts = run_syntax_capture(syntax, charts=bool(req.get("charts")))
     menu = analyses.rm_anova_menu(req) if kind == "rm_anova" else analyses.MENU.get(kind)
     if kind == "scale_score":
         items, _, fmt = analyses.scale_score_expr(req)
@@ -273,8 +304,11 @@ def action_analysis(req):
         menu = (analyses.FILTER_MENU % cond) + " ; sonra " + menu
     if req.get("exact"):
         menu += analyses.EXACT_NOTE
-    return {"path": path, "analysis": kind, "filter": cond, "syntax": syntax,
-            "spss_menu": menu, "tables": tables}
+    out = {"path": path, "analysis": kind, "filter": cond, "syntax": syntax,
+           "spss_menu": menu, "tables": tables}
+    if req.get("charts"):
+        out["charts"] = charts
+    return out
 
 
 def action_descriptives(req):

@@ -297,7 +297,8 @@ def b_anova_factorial(req, info):
              "  /EMMEANS=TABLES(%s)" % inter]
     for u in used:
         lines.append("  /EMMEANS=TABLES(%s) COMPARE(%s) ADJ(BONFERRONI)" % (inter, u))
-    lines += ["  /PRINT=DESCRIPTIVE ETASQ HOMOGENEITY",
+    lines += ["  /PLOT=PROFILE(%s)" % inter,
+              "  /PRINT=DESCRIPTIVE ETASQ HOMOGENEITY",
               "  /CRITERIA=ALPHA(.05)",
               "  /DESIGN=%s." % " ".join(terms)]
     return prelude + "\n".join(lines)
@@ -502,6 +503,8 @@ def b_rm_anova(req, info):
         lines.append("  /PRINT=DESCRIPTIVE ETASQ HOMOGENEITY")
     else:
         lines.append("  /PRINT=DESCRIPTIVE ETASQ")
+    # Profile plot: only reaches Claude when charts=True, harmless otherwise.
+    lines.append("  /PLOT=PROFILE(%s)" % (("%s*%s" % (factor, g)) if between else factor))
     lines.append("  /CRITERIA=ALPHA(.05)")
     lines.append("  /WSDESIGN=%s" % factor)
     lines.append("  /DESIGN=%s." % g if between else "  /DESIGN.")

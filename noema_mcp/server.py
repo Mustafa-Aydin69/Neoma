@@ -21,6 +21,7 @@ import time
 from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
+from mcp.types import CallToolResult, ImageContent, TextContent
 
 ROOT = Path(__file__).resolve().parent.parent
 WORKER = ROOT / "worker" / "spss_worker.py"
@@ -202,8 +203,12 @@ def log_run(request: dict, response: dict) -> None:
     """Append every run to a JSONL log, and the syntax to a .sps file."""
     LOG_DIR.mkdir(parents=True, exist_ok=True)
     now = dt.datetime.now().isoformat(timespec="seconds")
+    logged = response
+    result = response.get("result")
+    if isinstance(result, dict) and result.get("charts"):
+        logged = dict(response, result=dict(result, charts=["%d grafik" % len(result["charts"])]))
     with open(LOG_DIR / "runs.jsonl", "a", encoding="utf-8") as f:
-        f.write(json.dumps({"time": now, "request": request, "response": response},
+        f.write(json.dumps({"time": now, "request": request, "response": logged},
                            ensure_ascii=False) + "\n")
     syntax = (response.get("result") or {}).get("syntax")
     if syntax:
@@ -228,14 +233,38 @@ def inspect_dataset(path: str) -> dict:
     return call_worker({"action": "inspect", "path": path})
 
 
-def analysis(kind: str, path: str, filter_variable=None, filter_value=None, **params) -> dict:
+def analysis(kind: str, path: str, filter_variable=None, filter_value=None, **params):
     req = {"action": "analysis", "kind": kind, "path": path}
     if filter_variable:
         if filter_value is None:
             return {"ok": False, "error": "filter_variable verildiyse filter_value da gerekli"}
         req["filter"] = {"variable": filter_variable, "value": filter_value}
-    req.update({k: v for k, v in params.items() if v is not None})
-    return call_worker(req)
+    req.update({k: v for k, v in params.items() if v is not None and v is not False})
+    resp = call_worker(req)
+    return with_charts(resp)
+
+
+def with_charts(resp: dict):
+    """Move PNG charts out of the JSON and send them as MCP image content, so
+    Claude can look at boxplots, Q-Q plots, residual and scree plots."""
+    result = resp.get("result") if isinstance(resp.get("result"), dict) else None
+    charts = result.pop("charts", None) if result else None
+    if not charts:
+        return resp
+    images, notes = [], []
+    for c in charts:
+        if c.get("png_base64"):
+            images.append(ImageContent(type="image", data=c["png_base64"], mimeType="image/png"))
+        elif c.get("text"):
+            notes.append(c["text"])
+    result["charts_sent"] = len(images)
+    if notes:
+        result["charts_note"] = "; ".join(notes)
+    if not images:
+        result["charts_note"] = result.get("charts_note") or "SPSS bu analiz icin grafik uretmedi"
+        return resp
+    text = TextContent(type="text", text=json.dumps(resp, ensure_ascii=False))
+    return CallToolResult(content=[text, *images], structuredContent=resp)
 
 
 # Every analysis tool also accepts filter_variable/filter_value to analyse one
@@ -274,13 +303,15 @@ def run_frequencies(path: str, variables: list[str],
 
 @mcp.tool()
 def run_normality(path: str, variables: list[str], group: str | None = None,
+        charts: bool = False,
         filter_variable: str | None = None,
         filter_value: str | float | None = None) -> dict:
     """Normallik testi (EXAMINE): Kolmogorov-Smirnov ve Shapiro-Wilk, carpiklik/basiklik.
 
     group verilirse her grup icin ayri test yapilir (t-testi/ANOVA oncesi bu kullanilmali).
+    charts=True: grafikleri (boxplot, normal Q-Q) resim olarak da dondurur (en fazla 8).
     """
-    return analysis("normality", path, filter_variable=filter_variable, filter_value=filter_value, variables=variables, group=group)
+    return analysis("normality", path, charts=charts, filter_variable=filter_variable, filter_value=filter_value, variables=variables, group=group)
 
 
 @mcp.tool()
@@ -331,6 +362,7 @@ def run_correlation(path: str, variables: list[str], method: str = "pearson",
 @mcp.tool()
 def run_regression(path: str, dependent: str, blocks: list[list[str]],
         method: str = "enter",
+        charts: bool = False,
         filter_variable: str | None = None,
         filter_value: str | float | None = None) -> dict:
     """Coklu dogrusal regresyon (REGRESSION).
@@ -343,13 +375,15 @@ def run_regression(path: str, dependent: str, blocks: list[list[str]],
     Cikti: model ozeti (R, R^2, duzeltilmis R^2, R^2 degisimi, Durbin-Watson),
     ANOVA, katsayilar (B, beta, t, p, %95 GA, kismi/yari kismi r, tolerans, VIF),
     artik istatistikleri.
+    charts=True: grafikleri (artik-tahmin sacilimi, normal P-P) resim olarak da dondurur (en fazla 8).
     """
-    return analysis("regression", path, filter_variable=filter_variable, filter_value=filter_value,
+    return analysis("regression", path, charts=charts, filter_variable=filter_variable, filter_value=filter_value,
                     dependent=dependent, blocks=blocks, method=method)
 
 
 @mcp.tool()
 def run_anova_factorial(path: str, dependent: str, factors: list[str],
+        charts: bool = False,
         filter_variable: str | None = None,
         filter_value: str | float | None = None) -> dict:
     """Iki (ya da uc) yonlu bagimsiz gruplar ANOVA (UNIANOVA, tam faktoriyel).
@@ -361,8 +395,9 @@ def run_anova_factorial(path: str, dependent: str, factors: list[str],
     oku ve atlandiysa soyle), etkilesim icin Bonferroni'li basit etkiler.
     Once etkilesime bak. Bos hucre (bir grup kombinasyonunda hic kisi yok) varsa
     etkilesim sd'si duser; bunu kullaniciya soyle.
+    charts=True: grafikleri (profil grafigi) resim olarak da dondurur (en fazla 8).
     """
-    return analysis("anova_factorial", path, filter_variable=filter_variable, filter_value=filter_value,
+    return analysis("anova_factorial", path, charts=charts, filter_variable=filter_variable, filter_value=filter_value,
                     dependent=dependent, factors=factors)
 
 
@@ -392,6 +427,7 @@ def run_logistic(path: str, dependent: str, predictors: list[str],
 @mcp.tool()
 def run_factor(path: str, variables: list[str], extraction: str = "pc",
         rotation: str = "varimax", n_factors: int | None = None,
+        charts: bool = False,
         filter_variable: str | None = None,
         filter_value: str | float | None = None) -> dict:
     """Aciklayici faktor analizi (FACTOR).
@@ -402,8 +438,9 @@ def run_factor(path: str, variables: list[str], extraction: str = "pc",
     Cikti: KMO ve Bartlett, ortak varyanslar, aciklanan varyans, dondurulmus
     yuk matrisi (,30 alti gizli). Scree grafigi doner gelmez; kullaniciya
     SPSS'te bakmasini soyle.
+    charts=True: grafikleri (scree) resim olarak da dondurur (en fazla 8).
     """
-    return analysis("factor", path, filter_variable=filter_variable, filter_value=filter_value,
+    return analysis("factor", path, charts=charts, filter_variable=filter_variable, filter_value=filter_value,
                     variables=variables, extraction=extraction, rotation=rotation,
                     n_factors=n_factors)
 
@@ -467,6 +504,7 @@ def run_friedman(path: str, variables: list[str], exact: bool = False,
 @mcp.tool()
 def run_rm_anova(path: str, variables: list[str], group: str | None = None,
         factor_name: str = "zaman",
+        charts: bool = False,
         filter_variable: str | None = None,
         filter_value: str | float | None = None) -> dict:
     """Tekrarli olcumler ANOVA (GLM). variables: ayni kisilerin olcumleri, sirayla
@@ -476,8 +514,9 @@ def run_rm_anova(path: str, variables: list[str], group: str | None = None,
     Levene, kismi eta-kare, Bonferroni'li ikili karsilastirmalar ve basit etkiler dahil.
     Kuresellik bozuksa Greenhouse-Geisser satiri raporlanmalidir.
     Advanced Statistics modulu gerekir.
+    charts=True: grafikleri (profil grafigi) resim olarak da dondurur (en fazla 8).
     """
-    return analysis("rm_anova", path, filter_variable=filter_variable, filter_value=filter_value,
+    return analysis("rm_anova", path, charts=charts, filter_variable=filter_variable, filter_value=filter_value,
                     variables=variables, group=group, factor_name=factor_name)
 
 

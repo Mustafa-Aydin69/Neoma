@@ -94,3 +94,7 @@ Windows 11, bölge adını `Turkish_Türkiye.1254` olarak veriyor. SPSS 27 bu ad
 - Sıcak motor (kalıcı işçi) sahte SPSS ile test edildi: yeniden kullanım, çökme sonrası yeniden başlatma, boşta kapanma ve sunucu öldürülünce işçinin kapanması.
 - Rehber skill: `skill/noema-spss-rehber/`.
 - Sırada: `.mcpb` paketi, Cronbach alfa ve ölçek puanı hesaplama araçları.
+
+## Grafikler
+
+`run_normality`, `run_regression`, `run_factor`, `run_rm_anova` ve `run_anova_factorial` araçlarına `charts=True` verilirse SPSS grafikleri (boxplot, Q-Q, artık, scree, profil) PNG olarak Claude'a gönderilir (çağrı başına en fazla 8). Grafikler log dosyasına yazılmaz.

@@ -86,6 +86,10 @@ Türkçe, sade ve sıcak bir dille konuş; terimleri ilk geçtiği yerde kısaca
 - **Ki-kare:** beklenen frekansı 5'ten küçük hücre oranı %20'yi geçmemeli.
   2x2 tablolarda gerekiyorsa Fisher kesin testine bak.
 - **Uç değerler:** `run_normality` çıktısındaki Extreme Values tablosuna bak.
+- **Grafikler:** `run_normality`, `run_regression`, `run_factor`, `run_rm_anova` ve
+  `run_anova_factorial` `charts=True` ile boxplot, Q-Q, artık, scree ve profil
+  grafiklerini resim olarak döndürür (en fazla 8). Grafiğe bakarak yorum yaptığında
+  bunu söyle; grafik gelmediyse (`charts_sent` yok ya da 0) gördüğünü iddia etme.
 - Varsayım bozulursa parametrik olmayan karşılığa geç ve nedenini açıkla.
 - **Küçük örneklem (grup başına n < 30):** Parametrik olmayan testlerde `exact=True`
   kullan ve "Exact Sig." değerini raporla.
@@ -115,7 +119,7 @@ silmez (SPSS'teki "Filter out unselected cases" gibi çalışır).
 - Varsayımlar: örneklem büyüklüğü (N ≥ 50 + 8k, Tabachnick & Fidell), çoklu bağlantı
   (VIF < 10, tolerans > ,10), hataların bağımsızlığı (Durbin-Watson yaklaşık 1,5–2,5),
   artıkların normalliği ve uç değerler (Casewise Diagnostics, standart artık > |3|).
-  Grafikleri göremediğini söyle; kullanıcıdan SPSS'teki artık grafiğine bakmasını iste.
+  Artık grafikleri için `charts=True` kullan.
 
 ### İki yönlü ANOVA
 - `run_anova_factorial`: bir sürekli bağımlı değişken, 2–3 bağımsız gruplama değişkeni
@@ -141,8 +145,7 @@ silmez (SPSS'teki "Filter out unselected cases" gibi çalışır).
 - `run_factor`: ölçek geliştirme/uyarlama için. Önce KMO (> ,60; ,80+ iyi) ve Bartlett
   (p < ,05). Faktörlerin ilişkili olması bekleniyorsa `paf` + `promax`/`oblimin`,
   değilse `pc` + `varimax`. Faktör sayısına öz değer > 1, açıklanan varyans ve scree
-  grafiği birlikte karar verir; scree grafiği Claude'a gelmez, kullanıcıdan SPSS'te
-  bakmasını iste. Yük < ,30–,40 ya da iki faktöre benzer yüklenen (binişik, fark < ,10)
+  grafiği birlikte karar verir; scree grafiği için `charts=True` kullan. Yük < ,30–,40 ya da iki faktöre benzer yüklenen (binişik, fark < ,10)
   maddeleri işaretle, ama madde silme kararını kullanıcıya ve danışmana bırak. Örneklem:
   madde başına en az 5–10 kişi. AFA sonrası her faktör için `run_reliability` öner.
   Tek maddeli faktörler ve öz değeri 1'e çok yakın faktörler zayıftır; `n_factors`
