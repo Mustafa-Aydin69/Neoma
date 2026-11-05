@@ -16,6 +16,13 @@ MENU = {
     "anova_factorial": ("Analyze > General Linear Model > Univariate (Dependent Variable; Fixed Factor(s); "
                         "Options: Descriptive statistics, Estimates of effect size, Homogeneity tests; "
                         "Post Hoc: Tukey, Games-Howell; EM Means: etkilesim satiri, Compare simple main effects, Bonferroni)"),
+    "ancova": ("Analyze > General Linear Model > Univariate (Dependent Variable; Fixed Factor(s); Covariate(s): kovaryat(lar); "
+               "Options: Descriptive statistics, Estimates of effect size, Homogeneity tests; EM Means: faktor(ler), "
+               "Compare main effects, Bonferroni). Egim homojenligi icin once Model > Build terms ile faktor, kovaryat ve "
+               "faktor*kovaryat etkilesimini ekleyip ayri calistirin"),
+    "manova": ("Analyze > General Linear Model > Multivariate (Dependent Variables: tum bagimlilar; Fixed Factor(s); "
+               "Covariate(s) varsa; Options: Descriptive statistics, Estimates of effect size, Homogeneity tests; "
+               "Post Hoc: Tukey, Games-Howell; EM Means: faktor(ler), Compare main effects, Bonferroni)"),
     "logistic": ("Analyze > Regression > Binary Logistic (Dependent; Covariates; Categorical: kategorik "
                  "yordayicilar, Reference Category; Options: Hosmer-Lemeshow goodness-of-fit, CI for exp(B))"),
     "factor": ("Analyze > Dimension Reduction > Factor (Descriptives: KMO and Bartlett's test; "
@@ -304,6 +311,101 @@ def b_anova_factorial(req, info):
     return prelude + "\n".join(lines)
 
 
+def _glm_factors(req, info, maximum=2):
+    factors = names(req.get("factors"), minimum=1, label="faktor (gruplama degiskeni)")
+    if len(factors) > maximum:
+        raise ValueError("En fazla %d faktor desteklenir" % maximum)
+    prelude, used = "", []
+    for i, f in enumerate(factors):
+        if info(f)["is_string"]:
+            t = "noema_f%d" % (i + 1)
+            prelude += _autorecode_into(f, t)
+            used.append(t)
+        else:
+            used.append(f)
+    return factors, used, prelude
+
+
+def _numeric_list(req, key, info, minimum, label):
+    vals = names(req.get(key) or [], minimum=minimum, label=label)
+    for v in vals:
+        if info(v)["is_string"]:
+            raise ValueError("%s sayisal olmali: %s" % (label, v))
+    return vals
+
+
+def _no_duplicates(groups):
+    seen = [v.lower() for g in groups for v in g]
+    if len(set(seen)) != len(seen):
+        raise ValueError("Ayni degisken iki kez verildi")
+
+
+def _factor_terms(used):
+    terms = list(used)
+    if len(used) == 2:
+        terms.append("%s*%s" % tuple(used))
+    return terms
+
+
+def b_ancova(req, info):
+    dep = check_name(req.get("dependent"))
+    if info(dep)["is_string"]:
+        raise ValueError("Bagimli degisken sayisal olmali: %s" % dep)
+    covs = _numeric_list(req, "covariates", info, 1, "kovaryat")
+    factors, used, prelude = _glm_factors(req, info)
+    _no_duplicates([[dep], factors, covs])
+    terms = _factor_terms(used)
+    # 1) Homogeneity of regression slopes: factor x covariate must be n.s.
+    slopes = terms + covs + ["%s*%s" % (f, c) for f in used for c in covs]
+    lines = ["* Egim homojenligi kontrolu (faktor*kovaryat satiri anlamsiz olmali).",
+             "UNIANOVA %s BY %s WITH %s" % (dep, " ".join(used), " ".join(covs)),
+             "  /METHOD=SSTYPE(3)",
+             "  /INTERCEPT=INCLUDE",
+             "  /CRITERIA=ALPHA(.05)",
+             "  /DESIGN=%s." % " ".join(slopes),
+             "* Asil ANCOVA.",
+             "UNIANOVA %s BY %s WITH %s" % (dep, " ".join(used), " ".join(covs)),
+             "  /METHOD=SSTYPE(3)",
+             "  /INTERCEPT=INCLUDE"]
+    for u in used:
+        lines.append("  /EMMEANS=TABLES(%s) COMPARE ADJ(BONFERRONI)" % u)
+    if len(used) == 2:
+        inter = "%s*%s" % tuple(used)
+        for u in used:
+            lines.append("  /EMMEANS=TABLES(%s) COMPARE(%s) ADJ(BONFERRONI)" % (inter, u))
+        lines.append("  /PLOT=PROFILE(%s)" % inter)
+    else:
+        lines.append("  /PLOT=PROFILE(%s)" % used[0])
+    lines += ["  /PRINT=DESCRIPTIVE ETASQ HOMOGENEITY PARAMETER",
+              "  /CRITERIA=ALPHA(.05)",
+              "  /DESIGN=%s." % " ".join(covs + terms)]
+    return prelude + "\n".join(lines)
+
+
+def b_manova(req, info):
+    deps = _numeric_list(req, "dependents", info, 2, "bagimli degisken")
+    covs = _numeric_list(req, "covariates", info, 0, "kovaryat")
+    factors, used, prelude = _glm_factors(req, info)
+    _no_duplicates([deps, factors, covs])
+    terms = _factor_terms(used)
+    head = "GLM %s BY %s" % (" ".join(deps), " ".join(used))
+    if covs:
+        head += " WITH %s" % " ".join(covs)
+    lines = [head, "  /METHOD=SSTYPE(3)", "  /INTERCEPT=INCLUDE"]
+    if not covs:
+        # SPSS ignores POSTHOC when covariates are present.
+        lines.append("  /POSTHOC=%s(TUKEY GH)" % " ".join(used))
+    for u in used:
+        lines.append("  /EMMEANS=TABLES(%s) COMPARE ADJ(BONFERRONI)" % u)
+    if len(used) == 2:
+        lines.append("  /EMMEANS=TABLES(%s*%s)" % tuple(used))
+    lines += ["  /PLOT=PROFILE(%s)" % ("%s*%s" % tuple(used) if len(used) == 2 else used[0]),
+              "  /PRINT=DESCRIPTIVE ETASQ HOMOGENEITY",
+              "  /CRITERIA=ALPHA(.05)",
+              "  /DESIGN=%s." % " ".join(covs + terms)]
+    return prelude + "\n".join(lines)
+
+
 def b_logistic(req, info):
     dep = check_name(req.get("dependent"))
     preds = names(req.get("predictors"), label="yordayici")
@@ -529,6 +631,8 @@ BUILDERS = {
     "anova_oneway": b_anova_oneway,
     "correlation": b_correlation,
     "anova_factorial": b_anova_factorial,
+    "ancova": b_ancova,
+    "manova": b_manova,
     "logistic": b_logistic,
     "factor": b_factor,
     "regression": b_regression,

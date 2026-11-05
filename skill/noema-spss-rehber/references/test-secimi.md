@@ -5,6 +5,8 @@
 | İki grup farklı mı? | Sürekli | Bağımsız 2 grup | `run_ttest_independent` | `run_mann_whitney` |
 | Üç ve üzeri grup farklı mı? | Sürekli | Bağımsız k grup | `run_anova_oneway` (+ post hoc) | `run_kruskal_wallis` |
 | İki etken birlikte (ve etkileşimi)? | Sürekli | Bağımsız gruplar, 2–3 faktör | `run_anova_factorial` | — |
+| Ön test kontrol edilerek gruplar farklı mı? | Sürekli (son test) | Bağımsız gruplar + kovaryat | `run_ancova` | — |
+| Birden çok ilişkili sonuçta gruplar farklı mı? | 2+ sürekli | Bağımsız gruplar | `run_manova` | — |
 | Ön test ve son test farklı mı? | Sürekli | Aynı kişiler, 2 ölçüm | `run_ttest_paired` | `run_wilcoxon` |
 | Aynı kişilerde 3+ ölçüm farklı mı? | Sürekli/sıralı | Aynı kişiler, k ölçüm | `run_rm_anova` (gruplu desende `group` ile zaman × grup) | `run_friedman` + Bonferroni'li `run_wilcoxon` |
 | Ölçek güvenilir mi? | Maddeler | — | `run_reliability` (Cronbach alfa; ters maddeler `reverse_items`) | — |

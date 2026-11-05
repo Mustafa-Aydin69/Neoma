@@ -352,7 +352,7 @@ def action_analysis(req):
     syntax = pre + syntax + ("\n" + post if post else "")
     # Fail early with a clear message if a variable does not exist.
     for key in ("variables", "group", "row", "column", "reverse_items", "dependent",
-                "factors", "predictors", "categorical"):
+                "factors", "predictors", "categorical", "covariates", "dependents"):
         vals = req.get(key)
         for v in ([vals] if isinstance(vals, str) else (vals or [])):
             variable_info(v)

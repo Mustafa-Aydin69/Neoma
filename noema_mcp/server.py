@@ -406,6 +406,49 @@ def run_anova_factorial(path: str, dependent: str, factors: list[str],
 
 
 @mcp.tool()
+def run_ancova(path: str, dependent: str, factors: list[str], covariates: list[str],
+        charts: bool = False,
+        filter_variable: str | None = None,
+        filter_value: str | float | None = None) -> dict:
+    """Kovaryans analizi (ANCOVA, UNIANOVA ... WITH).
+
+    dependent: surekli bagimli (or. son test). factors: 1-2 gruplama degiskeni
+    (or. ["grup"]). covariates: kontrol edilen surekli degisken(ler) (or. ["ontest"]).
+    Iki UNIANOVA calisir: (1) egim homojenligi kontrolu; Tests of Between-Subjects
+    Effects tablosunda "faktor * kovaryat" satiri anlamsiz (p > ,05) olmali, anlamliysa
+    ANCOVA varsayimi bozulur, bunu soyle. (2) asil ANCOVA: Levene, kovaryat ve faktor
+    etkileri (kismi eta kare), duzeltilmis ortalamalar (Estimated Marginal Means,
+    kovaryat ortalamasinda) ve Bonferroni'li ikili karsilastirmalar.
+    Raporda ham ortalamalari degil duzeltilmis ortalamalari kullan.
+    charts=True: profil grafigini (duzeltilmis ortalamalar) resim olarak da dondurur.
+    """
+    return analysis("ancova", path, charts=charts, filter_variable=filter_variable, filter_value=filter_value,
+                    dependent=dependent, factors=factors, covariates=covariates)
+
+
+@mcp.tool()
+def run_manova(path: str, dependents: list[str], factors: list[str],
+        covariates: list[str] | None = None,
+        charts: bool = False,
+        filter_variable: str | None = None,
+        filter_value: str | float | None = None) -> dict:
+    """Cok degiskenli varyans analizi (MANOVA; kovaryat verilirse MANCOVA).
+
+    dependents: 2+ iliskili surekli bagimli (or. olcegin alt boyutlari).
+    factors: 1-2 gruplama degiskeni. covariates: istege bagli.
+    Cikti: Box's M (kovaryans matrislerinin esitligi; p < ,001 ise bozuk sayilir,
+    o zaman Pillai's Trace raporla), Multivariate Tests (Wilks' Lambda / Pillai,
+    kismi eta kare), her bagimli icin Levene ve Tests of Between-Subjects Effects
+    (tek degiskenli izleme testleri; Bonferroni: ,05 / bagimli sayisi), post hoc
+    (kovaryat yoksa Tukey/Games-Howell) ve Bonferroni'li ikili karsilastirmalar.
+    Once cok degiskenli testa bak; anlamli degilse tek degiskenli testleri yorumlama.
+    charts=True: profil grafiklerini resim olarak da dondurur (en fazla 8).
+    """
+    return analysis("manova", path, charts=charts, filter_variable=filter_variable, filter_value=filter_value,
+                    dependents=dependents, factors=factors, covariates=covariates)
+
+
+@mcp.tool()
 def run_logistic(path: str, dependent: str, predictors: list[str],
         categorical: list[str] | None = None, reference: str = "first",
         method: str = "enter",

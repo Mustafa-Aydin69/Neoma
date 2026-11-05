@@ -34,6 +34,8 @@ Claude Desktop ──MCP──> noema_mcp/server.py  (modern Python 3.10+)
 | `run_rm_anova` | GLM /WSFACTOR | Tekrarlı ölçümler ANOVA; `group` ile karışık desen (zaman × grup) |
 | `run_regression` | REGRESSION | Çoklu/hiyerarşik doğrusal regresyon: R², ΔR², β, VIF, Durbin-Watson |
 | `run_anova_factorial` | UNIANOVA | İki/üç yönlü ANOVA, etkileşim, basit etkiler, post hoc |
+| `run_ancova` | UNIANOVA ... WITH | ANCOVA: kovaryat (ör. ön test) kontrolüyle grup farkı, eğim homojenliği kontrolü, düzeltilmiş ortalamalar |
+| `run_manova` | GLM (çok bağımlı) | MANOVA/MANCOVA: Box's M, Pillai/Wilks, tek değişkenli izleme testleri |
 | `run_logistic` | LOGISTIC REGRESSION | İkili lojistik regresyon: Nagelkerke R², Hosmer-Lemeshow, odds oranları |
 | `run_factor` | FACTOR | Açıklayıcı faktör analizi: KMO, Bartlett, döndürülmüş yükler |
 | `run_reliability` | RELIABILITY | Cronbach alfa, madde-toplam korelasyonları; `reverse_items` + `scale_min`/`scale_max` ile ters maddeler |
@@ -97,4 +99,4 @@ Windows 11, bölge adını `Turkish_Türkiye.1254` olarak veriyor. SPSS 27 bu ad
 
 ## Grafikler
 
-`run_normality`, `run_regression`, `run_factor`, `run_rm_anova` ve `run_anova_factorial` araçlarına `charts=True` verilirse SPSS grafikleri (boxplot, Q-Q, artık, scree, profil) PNG olarak Claude'a gönderilir (çağrı başına en fazla 8). Grafikler log dosyasına yazılmaz.
+`run_normality`, `run_regression`, `run_factor`, `run_rm_anova`, `run_anova_factorial`, `run_ancova` ve `run_manova` araçlarına `charts=True` verilirse SPSS grafikleri (boxplot, Q-Q, artık, scree, profil) resim olarak Claude'a gönderilir (çağrı başına en fazla 8). Grafikler log dosyasına yazılmaz.
