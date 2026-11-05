@@ -381,8 +381,23 @@ def b_ancova(req, info):
               "  /CRITERIA=ALPHA(.05)",
               "  /DESIGN=%s." % " ".join(covs + terms)]
     # Scatter per group shows whether the slopes are parallel.
-    lines += ["* Gruplara gore sacilim (egimler paralel mi).",
-              "GRAPH /SCATTERPLOT(BIVAR)=%s WITH %s BY %s." % (covs[0], dep, used[0])]
+    # Scatter with one fit line per group: parallel lines = homogeneous slopes.
+    x, g = covs[0], used[0]
+    lines += ["* Gruplara gore sacilim ve her grup icin regresyon cizgisi (egimler paralel mi).",
+              "GGRAPH",
+              "  /GRAPHDATASET NAME=\"noema_g\" VARIABLES=%s %s %s MISSING=LISTWISE REPORTMISSING=NO" % (x, dep, g),
+              "  /GRAPHSPEC SOURCE=INLINE.",
+              "BEGIN GPL",
+              "  SOURCE: s=userSource(id(\"noema_g\"))",
+              "  DATA: x=col(source(s), name(\"%s\"))" % x,
+              "  DATA: y=col(source(s), name(\"%s\"))" % dep,
+              "  DATA: g=col(source(s), name(\"%s\"), unit.category())" % g,
+              "  GUIDE: axis(dim(1), label(\"%s\"))" % x,
+              "  GUIDE: axis(dim(2), label(\"%s\"))" % dep,
+              "  GUIDE: legend(aesthetic(aesthetic.color.exterior), label(\"%s\"))" % factors[0],
+              "  ELEMENT: point(position(x*y), color.exterior(g))",
+              "  ELEMENT: line(position(smooth.linear(x*y)), color(g))",
+              "END GPL."]
     return prelude + "\n".join(lines)
 
 

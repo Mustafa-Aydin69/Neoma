@@ -420,7 +420,8 @@ def run_ancova(path: str, dependent: str, factors: list[str], covariates: list[s
     etkileri (kismi eta kare), duzeltilmis ortalamalar (Estimated Marginal Means,
     kovaryat ortalamasinda) ve Bonferroni'li ikili karsilastirmalar.
     Raporda ham ortalamalari degil duzeltilmis ortalamalari kullan.
-    Ilk kovaryat icin gruplara gore sacilim grafigi de cizilir (egimler paralel mi).
+    Ilk kovaryat icin gruplara gore sacilim grafigi, her grubun regresyon cizgisiyle
+    cizilir (cizgiler paralelse egimler homojen).
     charts=True: profil grafigi (duzeltilmis ortalamalar) ve sacilim grafigini resim
     olarak da dondurur.
     """
